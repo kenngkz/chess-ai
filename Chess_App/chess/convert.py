@@ -1,5 +1,26 @@
+'''
+Conversion functions between different data types.
+
+Functions:
+    - position representation: np.ndarray to dict
+    - position representation: dict to np.ndarray
+    - integers: returns the sign of the integer. Returns 0 if input is None.
+'''
+
+
+# --------------------------------------------------------------------
+'''
+Imports
+'''
+
 import numpy as np
 from typing import Union
+
+# --------------------------------------------------------------------
+'''
+Function definitions
+'''
+
 
 def arr_to_dict(arr) -> dict:
 
