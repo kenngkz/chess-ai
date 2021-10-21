@@ -1,11 +1,23 @@
+'''
+Get functions to retrieve information from the board. 
+
+Functions:
+    - index
+    - side
+    - first_in_direction
+    - between
+    - game_state
+'''
+
 # --------------------------------------------------------------------
 '''
 Imports
 '''
 # --------------------------------------------------------------------
 
-from typing import Union, Tuple, List
+from typing import Union, List
 from convert import sign
+import legal
 
 # --------------------------------------------------------------------
 '''
@@ -49,6 +61,7 @@ def side(board:"Board", cell:int) -> Union[None, int]:
             return 0
 
 
+# used in indicator.legal
 def first_in_direction(board:"Board", cell:int, direction:int, max_distance:int) -> int:
     
     '''
@@ -62,6 +75,8 @@ def first_in_direction(board:"Board", cell:int, direction:int, max_distance:int)
             return piece
     return 0
 
+
+# used in indicator.legal
 def between(board:"Board", start_cell:int, final_cell:int, direction:int) -> List[int]:
 
     '''
@@ -74,23 +89,36 @@ def between(board:"Board", start_cell:int, final_cell:int, direction:int) -> Lis
     for _ in range((final_cell-start_cell) // direction - 1):
         cell += direction
         pieces_in_between.append(index(board, cell))
-        
     return pieces_in_between
 
 
-# dont think i need this
-def pieces_in_direction(board:"Board", cell:int, direction:int, max_distance:int, n_pieces:int=2) -> Tuple[int]:
-    
+def game_state(board) -> List[bool]:
+
     '''
-    Returns the first 2 pieces in a given direction from a given cell.
+    Returns the game state for the given board.
+    Game state information concerns the checkmate status for both sides and the stalemate status.
+
+    Output: List[black_checkmated, white_checkmated, stalemate]
+        - black_checkmated : bool  -- white wins
+        - white_checkmated : bool  -- black wins
+        - stalemate : bool
     '''
-    output_pieces = (None, None)
-    n_pieces_found = 0
-    for _ in range(max_distance):
-        cell = cell + direction
-        piece = index(board, cell)
-        if piece != 0:
-            output_pieces[n_pieces_found] = piece
-            n_pieces_found += 1
-        if n_pieces_found == n_pieces:
-            return output_pieces
+
+    gamestate = [False, False, False]
+
+    # black checkmated
+    black_legal = len(set(legal.board(board, -1)))
+
+    if board.check[-1] and black_legal != 0:
+        gamestate[0] = True
+
+    # white checkmated
+    white_legal = len(set(legal.board(board, 1)))
+    if board.check[1] and white_legal != 0:
+        gamestate[1] = True
+
+    # stalemate
+    if (black_legal==0 and board.check[-1]) or (white_legal==0 and board.check[1]) or board.stalemate_counter==50:
+        gamestate[2] = True
+
+    return gamestate

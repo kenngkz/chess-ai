@@ -108,13 +108,13 @@ def board(board:"Board", side:int) -> Iterator[Tuple[int]]:
     Yields the prelegal moves (as Move objects) for all pieces of a particular side
 
     Order of Moves (reversed for black):
-     - pawn (promo, capture, slider_moves)
-     - knight
-     - bishop
-     - rook
-     - queen
-     - king
-     - castling
+        - pawn (promo, capture, slider_moves)
+        - knight
+        - bishop
+        - rook
+        - queen
+        - king
+        - castling
 
     To do: implement piece sorting for black
     '''

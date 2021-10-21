@@ -10,6 +10,7 @@ Custom datatypes to be used in the chess application.
 Imports
 '''
 
+from Chess_App.app import move
 from convert import arr_to_dict, dict_to_arr
 from numpy import ndarray as nparray
 import get
@@ -22,7 +23,7 @@ from typing import Tuple
 Imported Variables File Names
 '''
 
-var_folder = 'C:/Users/lenovo/Desktop/Coding/VSC Projects/Chess_App/chess/vars/'
+var_folder = '../chess/vars/'
 ini_board_name = 'ini_board.txt'
 valid_cells_name = 'valid_cells.txt'
 piece_dirs_name = 'piece_dirs.txt'
@@ -56,6 +57,7 @@ class Move:
     history_file = "move_history.txt"
 
 
+    ## Initilization Methods
     def __init__(self,side:int, start_cell:int, final_cell:int, castle_type:int = 0, promo:int = 0):
         '''
         Initialization function.
@@ -85,25 +87,54 @@ class Move:
         return f'Move({self.side}, {self.start}, {self.final}, {self.castle_type}, {self.promo})'
 
 
-    def info(self, show=True) -> str:
+    def info_str(self, show=True) -> str:
         
         '''
-        Print with additional details on the moving piece and the captured piece (if any)
+        Print str with additional details on the moving piece and the captured piece (if any).
+        Method self.add_board() must be run prior to running this method.
         
         Print format:
         $Move_initialization_parameters$: $moving_piece_name$ -> $captured_piece_name$ (if no capture = 'empty cell')
         '''
-        
-        parameters = f'Move({self.side}, {self.start}, {self.final}, {self.castle_type}, {self.promo}): '
-        if self.start == 0:
-            movement = f'{self.castle_names[self.castle_type]}'
-        else:
-            movement = f'{self.index_to_name[get.index(self.board, self.start)]} -> ' \
-                + f'{self.index_to_name[get.index(self.board, self.final)]}'
+        try:
+            parameters = f'Move({self.side}, {self.start}, {self.final}, {self.castle_type}, {self.promo}): '
+            if self.start == 0:
+                movement = f'{self.castle_names[self.castle_type]}'
+            else:
+                movement = f'{self.index_to_name[get.index(self.board, self.start)]} -> ' \
+                    + f'{self.index_to_name[get.index(self.board, self.final)]}'
+            output = parameters + movement
+        except AttributeError:
+            output = "AttributeError: board attribute of Move object not found.\nPlease run the add_board() method of this object before running this method"            
+
         if show:
-            print(parameters + movement)
+            print(output)
         else:
-            return parameters + movement
+            return output
+
+    def info(self, show=True) -> Tuple[int]:
+
+        '''
+        Print tuple with additional details on the moving piece and the captured piece (if any).
+        Method self.add_board() must be run prior to running this method.
+
+        Tuple format:
+        (side, start, final, castle_type, promo, moving_piece_index, captured_piece_index)
+        '''
+
+        try:
+            output = (self.side, self.start, self.final, self.castle_type, self.promo, None, None)
+            if self.start != 0:
+                output[-2] = get.index(self.board, self.start)
+                output[-1] = get.index(self.board, self.final)
+        except AttributeError:
+            output = "AttributeError: board attribute of Move object not found.\nPlease run the add_board() method of this object before running this method" 
+
+        if show:
+            print(output)
+        else:
+            return output
+
 
 
     ## Add Attributes
@@ -124,6 +155,14 @@ class Move:
         '''
         return hash((self.side, self.start, self.final, self.castle_type, self.promo))
 
+    def to_tuple(self) -> Tuple[int]:
+
+        '''
+        Returns a tuple containing the initialization parameters for the move.
+        '''
+
+        return (self.side, self.start, self.final, self.castle_type, self.promo)
+
 
     ## Comparison Methods
     def __eq__(self, other:"Move") -> bool:
@@ -143,18 +182,18 @@ class Board:
     '''
     Custom DataType used to represent a chessboard position.
     Contains:
-      - Position of all pieces (dict)
-      - Castling status/availability
-      - King cells
-      - Check status
-      - (?) Legal moves  -  only generated after initialization
-      - (?) White and Black side list of pieces in order [pawn, knight, bishop, rook, queen, king]  -  then dont need king_cells attr
+        - Position of all pieces (dict)
+        - Castling status/availability
+        - King cells
+        - Check status
+        - (?) Legal moves  -  only generated after initialization
+        - (?) White and Black side list of pieces in order [pawn, knight, bishop, rook, queen, king]  -  then dont need king_cells attr
 
     (?) Representation of positions of pieces might need a np.ndarray dtype as well. 
         To do in future as all functions used the dict board representation.
 
     Inititialization Methods:
-      - __init__ -- using dict to show position
+        - __init__ -- using dict to show position
     
     '''
 
@@ -183,7 +222,7 @@ class Board:
 
 
     ## Instance Initialization
-    def __init__(self, side_to_move:int, dict_position:dict, castle_status:dict = {-5:True, -6:True, 5:True, 6:True}) -> None:
+    def __init__(self, side_to_move:int, dict_position:dict, castle_status:dict = {-5:True, -6:True, 5:True, 6:True}, stalemate_counter=0) -> None:
 
         '''
         Initialize Board DataType with dict.
@@ -195,34 +234,38 @@ class Board:
         self.find_king()
         self.add_check_status()
         self.legal = set()
+        self.stalemate_counter = stalemate_counter
     
     @classmethod
-    def from_arr(cls, arr:nparray, castle_status:dict = {-5:True, -6:True, 5:True, 6:True}) -> "Board":
+    def from_arr(cls, arr:nparray, castle_status:dict = {-5:True, -6:True, 5:True, 6:True}, stalemate_counter=0) -> "Board":
 
         '''
         Initializing Board instance with np.ndarray.
         '''
 
-        return cls(arr_to_dict(arr), castle_status)
+        return cls(arr_to_dict(arr), castle_status, stalemate_counter)
 
     @classmethod
-    def from_file(cls):
+    def from_file(cls, filename:str = None) -> "Board":
         
         '''
         Load board from text file.
         '''
 
+        if filename == None:
+            filename = cls.save_file
+
         try:
             with open(cls.data_folder + cls.save_file, 'r') as f:
-                pos_dict, castle_status = eval(f.read())
+                pos_dict, castle_status, stalemate_counter = eval(f.read())
         except FileNotFoundError:
             return "Save file is not found"
         except:
             return "Unknown Error Occured."
 
-        return cls(pos_dict, castle_status)
+        return cls(pos_dict, castle_status, stalemate_counter)
 
-    def copy(self):
+    def copy(self) -> "Board":
 
         '''
         Returns a copy of the Board instance.
@@ -270,10 +313,10 @@ class Board:
         Prints all relevant information about the Board object.
 
         Info displayed:
-         - position
-         - castle_status
-         - check_status
-         - legal_moves
+            - position
+            - castle_status
+            - check_status
+            - legal_moves
         '''
 
         output = str(self.to_arr()) + \
@@ -289,8 +332,8 @@ class Board:
         else:
             return output
 
+
     ## Add Attributes
-    # Save the cell of the kings of both sides
     def find_king(self) -> None:
 
         '''
@@ -302,7 +345,6 @@ class Board:
             1: list(self.dict.keys())[list(self.dict.values()).index(6)]
         }
 
-    # Save the check status for both sides (True if side is under check)
     def add_check_status(self) -> None:
         
         '''
@@ -323,9 +365,9 @@ class Board:
         self.legal.add(move)
 
 
-    ## Edit Existing Attributes
-    # edit position and castle status
+    ## Move Methods
     def move(self, move:Move, update=True) -> "Board":
+
         '''
         Performs the move and edits the Board instance information to contain the position after given move is made.
         The current Board instance is affected.
@@ -371,6 +413,8 @@ class Board:
 
         return new_board.move(move, update)
 
+
+    ## Update Methods
     def update_castle(self, move:Move) -> None:
         
         '''
@@ -398,7 +442,7 @@ class Board:
             else:
                 self.castle_status[3], self.castle_status[4] = False, False
 
-    def update_check(self):
+    def update_check(self) -> None:
         
         '''
         Updates the check_status for both sides.
@@ -407,13 +451,37 @@ class Board:
         for side in [-1, 1]:
             self.check[side] = indicator.check(self, side)
 
+    def update_counter(self, move:Move) -> None:
+
+        '''
+        Updates the stalemate counter.
+
+        Resets the counter to 0 if a capture has been made or a pawn has been moved.
+        Increments the counter by 1 otherwise.
+
+        If the counter reaches 50, stalemate has been achieved.
+        '''
+
+        move.add_board(self)
+        move_info = move.info(show=False)
+        # if pawn is moved or a piece is captured
+        if move_info[-2] == 1 or move_info in set([-1, -2, -3, -4, -5, -6, 1, 2, 3, 4, 5, 6]):
+            self.stalemate_counter = 0
+        else:
+            self.stalemate_counter += 1
+
+
     ## Persistance Methods
-    def save(self):
+    def save(self, filename:str = None) -> None:
         
         '''
         Save board information (position and castle_status) as a dict in a text file.
+
+        Optional input: filename -- file name to save the board
         '''
         
-        with open(self.data_folder + self.save_file, 'w') as f:
-            f.write(str((self.dict, self.castle_status)))
+        if filename == None:
+            filename = self.save_file
 
+        with open(self.data_folder + filename, 'w') as f:
+            f.write(str((self.dict, self.castle_status)))
