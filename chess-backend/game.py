@@ -2,10 +2,19 @@
 Manages and runs the chess game.
 '''
 
+from chess_objects import Board, Move
+
+class GameSave:
+    pass  # TODO
+
 class Game:
 
     def __init__(self):
-        pass
+        self.board = Board()
+
+    @classmethod
+    def load(cls):
+        pass # TODO
 
     def game_over(self):
         '''
