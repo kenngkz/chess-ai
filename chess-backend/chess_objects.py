@@ -17,7 +17,47 @@ from abc import ABC, abstractmethod
 from constants import pawn_move_range
 
 class Move:
-    pass
+
+    # mapping from castle type to change in position
+    castle_positions_mapping = {0:0, -5:((25, 23), (21, 24)), -6:((25,27), (28, 26)), 5:((95, 93), (91, 94)), 6:((95, 97), (98, 96))}
+
+    # castle type names mapping
+    castle_names = {-5:'Black Queenside Castle', -6:'Black Kingside Castle', 5: 'White Queenside Castle', 6:'White Kingside Castle'}
+
+    def __init__(self,side:int, start_cell:int, final_cell:int, castle_type:int = 0, promo:int = 0):
+        '''
+        Inputs:
+            - side: {-1:black, 1:white}
+            - start_cell -- initial cell of piece to be moved
+            - final_cell -- destination where the piece will be moved
+            - castle_type (optional) -- type of castle = {0:no castle, -5:black queenside, -6:black kingside, 5: white queenside, 6:white kingside} 
+            - promo (optional) -- promotion value for pawn promotion (index of the piece which the pawn will be promoted to)
+        '''
+        self.side = side
+        self.start = start_cell
+        self.final = final_cell
+        self.castle_type = castle_type
+        self.castle_positions = self.castle_direction[castle_type]
+        self.promo = promo
+
+    def __repr__(self) -> str:
+        ''' Print Move with initialization parameters '''
+        return f'Move({self.side}, {self.start}, {self.final}, {self.castle_type}, {self.promo})'
+
+    def __hash__(self) -> int:  # to allow __eq__ to be defined
+        return hash((self.side, self.start, self.final, self.castle_type, self.promo))
+
+    def __eq__(self, other:"Move"):
+        ''' Return True if self and other have the same init params. False otherwise '''
+        comparison_attr = ["side", "start", "final", "castle_type", "promo"]  # attributes to compare
+        for key in comparison_attr:
+            if self.__dict__[key] != other.__dict__[key]:
+                return False
+        return True
+
+    def to_tuple(self):
+        ''' Return init params for the move in a tuple '''
+        return (self.side, self.start, self.final, self.castle_type, self.promo)
 
 class Board:
     pass
