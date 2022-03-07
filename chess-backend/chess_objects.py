@@ -65,7 +65,6 @@ class Board:
     def __init__(self, position=constants.initial_board_position):
         ''' Initialize Board from dict '''
         self.position = self._position_add_pieces(position)
-        self.castle_status = {-5:True, -6:True, 5:True, 6:True}  # tracks whether castling is allowed
         self.king_position = self._get_king_position(position)
 
     @classmethod
@@ -159,6 +158,11 @@ class Piece(ABC):
         ''' Prelegal moves of a piece '''
         pass
 
+    @abstractmethod
+    def threat_map_contribution(self, board:"Board", include_forward=False):
+        ''' Threat map contribution of a piece '''
+        pass
+
     @property
     @abstractmethod
     def move_range(self):
@@ -194,6 +198,13 @@ class Leaper(Piece):
                     valid_prelegal_cells.append(new_cell)
         return [Move(self.side, self.cell, new_cell) for new_cell in valid_prelegal_cells]
 
+    def threat_map_contribution(self, board:"Board", include_forward=False):
+        ''' Yield threat map contribution by the Leaper Piece obj '''
+        for direction in self.move_range:
+            new_cell = self.cell + direction
+            if board.valid_cell(new_cell):
+                yield new_cell
+
 class Slider(Piece):
     ''' Abstract subclass of Piece for Slider pieces that have common function prelegal_moves() '''
     def prelegal_moves(self, board: "Board"):
@@ -214,6 +225,19 @@ class Slider(Piece):
                     break
         return [Move(self.side, self.cell, new_cell) for new_cell in valid_prelegal_cells]
 
+    def threat_map_contribution(self, board:"Board", include_forward=False):
+        ''' YIelds threat map contribution of a Slider Piece obj '''
+        for direction in self.move_range:
+            for offset_magnitude in range(1, 8):
+                new_cell = self.cell + direction * offset_magnitude
+                if board.valid_cell(new_cell):
+                    yield new_cell
+                    occupant = board.occupant(new_cell)
+                    if not occupant is EmptyCell:
+                        break
+                else:
+                    break
+
 class Pawn(Piece):
 
     # movement range of pawns are dependent on the side. assign move_range when Pawn obj is initialized
@@ -221,8 +245,8 @@ class Pawn(Piece):
     class_name = "pawn"
     class_symbol = "p"
 
-    def __init__(self, side, position):
-        super().__init__(side, position)
+    def __init__(self, side, cell):
+        super().__init__(side, cell)
         self.move_range = constants.pawn_move_range[side]  # overload move_range for each Pawn depending on its side
 
     def prelegal_moves(self, board: "Board"):
@@ -251,6 +275,22 @@ class Pawn(Piece):
         if promo_allowed:
             return [Move(self.side, self.cell, move.final, 0, promo_val) for promo_val in [2, 3, 4, 5] for move in valid_prelegal_moves]
         return valid_prelegal_moves
+
+    def threat_map_contribution(self, board: "Board", include_forward=False):
+        ''' Yield threat map contribution cells of a Pawn object '''
+        candidate_cells = [self.cell+self.move_range[2], self.cell+self.move_range[3]]
+        for candidate_cell in candidate_cells:
+            if board.valid_cell(candidate_cell):
+                yield candidate_cell
+        if include_forward:
+            candidate_cell = self.cell + self.move_range[0]
+            if board.occupant(candidate_cell) is EmptyCell:
+                yield candidate_cell
+                jump_allowed = self.cell//10==8 if self.side == 1 else self.cell//10==3
+                candidate_cell = self.cell + self.move_range[1]
+                if jump_allowed:  # if pawn is in starting row
+                    if board.occupant(candidate_cell) is EmptyCell:
+                        yield candidate_cell
 
 class Knight(Leaper):
     move_range = [-12, -21, -19, -8, 12, 21, 19, 8]
