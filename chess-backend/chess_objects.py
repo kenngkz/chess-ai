@@ -227,7 +227,30 @@ class Pawn(Piece):
 
     def prelegal_moves(self, board: "Board"):
         ''' Prelegal moves of a pawn '''
-        return super().prelegal_moves(board)  # TODO
+        valid_prelegal_moves = []
+        candidate_cell = self.cell + self.move_range[0]
+        # forward moves
+        if board.valid_cell(candidate_cell):
+            occupant = board.occupant(candidate_cell)
+            if occupant is EmptyCell:
+                valid_prelegal_moves.append(Move(self.side, self.cell, candidate_cell))
+                candidate_cell = self.cell + self.move_range[1]
+                jump_allowed = self.cell//10==8 if self.side == 1 else self.cell//10==3
+                if jump_allowed:
+                    if board.valid_cell(candidate_cell):
+                        if board.occupant(candidate_cell) is EmptyCell:
+                            valid_prelegal_moves.append(Move(self.side, self.cell, candidate_cell))
+        # capture moves
+        candidate_cells = [self.cell+self.move_range[2], self.cell+self.move_range[3]]
+        for candidate_cell in candidate_cells:
+            if board.valid_cell(candidate_cell):
+                if board.occupant(candidate_cell).side == -self.side:
+                    valid_prelegal_moves.append(Move(self.side, self.cell, candidate_cell))
+        # if in promotion position (2nd last row), convert all moves into promotion moves
+        promo_allowed = self.cell//10==3 if self.side == 1 else self.cell//10==8
+        if promo_allowed:
+            return [Move(self.side, self.cell, move.final, 0, promo_val) for promo_val in [2, 3, 4, 5] for move in valid_prelegal_moves]
+        return valid_prelegal_moves
 
 class Knight(Leaper):
     move_range = [-12, -21, -19, -8, 12, 21, 19, 8]
