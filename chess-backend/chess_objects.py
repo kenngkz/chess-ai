@@ -22,6 +22,9 @@ class Move:
     # mapping from castle type to change in position
     castle_positions_mapping = {0:0, -5:((25, 23), (21, 24)), -6:((25,27), (28, 26)), 5:((95, 93), (91, 94)), 6:((95, 97), (98, 96))}
 
+    # start_cells and final_cells for castle types
+    castle_direction = {0:None, -5:((25, 23), (21, 24)), -6:((25,27), (28, 26)), 5:((95, 93), (91, 94)), 6:((95, 97), (98, 96))}
+
     def __init__(self,side:int, start_cell:int, final_cell:int, castle_type:int = 0, promo:int = 0):
         '''
         Inputs:
@@ -135,6 +138,7 @@ class Board:
 class EmptyCell:
     name = "Empty cell"
     symbol = "-"
+    side = None
 
 class Piece(ABC):
     '''
@@ -152,6 +156,7 @@ class Piece(ABC):
 
     @abstractmethod
     def prelegal_moves(self, board:"Board"):
+        ''' Prelegal moves of a piece '''
         pass
 
     @property
@@ -172,8 +177,42 @@ class Piece(ABC):
         ''' Symbol of the piece type '''
         pass
 
-    def move_cell(self, move:"Move"):
-        pass   # TODO
+    def move_cell(self, new_cell):
+        self.cell = new_cell
+
+class Leaper(Piece):
+    ''' Abstract subclass of Piece for Leaper pieces that have common function prelegal_moves() '''
+
+    def prelegal_moves(self, board: "Board"):
+        ''' Prelegal moves of a piece '''
+        valid_prelegal_cells = []
+        for direction in self.move_range:
+            new_cell = self.cell + direction
+            new_cell_occupant = board.occupant(new_cell)
+            if board.valid_cell(new_cell):
+                if new_cell_occupant is EmptyCell or new_cell_occupant.side != self.side:
+                    valid_prelegal_cells.append(new_cell)
+        return [Move(self.side, self.cell, new_cell) for new_cell in valid_prelegal_cells]
+
+class Slider(Piece):
+    ''' Abstract subclass of Piece for Slider pieces that have common function prelegal_moves() '''
+    def prelegal_moves(self, board: "Board"):
+        ''' Prelegal moves of a piece '''
+        valid_prelegal_cells = []
+        for direction in self.move_range:
+            for offset_magnitude in [1, 2, 3, 4, 5, 6, 7]:
+                new_cell = self.cell + direction * offset_magnitude
+                if board.valid_cell(new_cell):
+                    occupant = board.occupant(new_cell)
+                    if not occupant is EmptyCell:
+                        if occupant.side != self.side:
+                            valid_prelegal_cells.append(new_cell)
+                        break
+                    else:
+                        valid_prelegal_cells.append(new_cell)
+                else:
+                    break
+        return [Move(self.side, self.cell, new_cell) for new_cell in valid_prelegal_cells]
 
 class Pawn(Piece):
 
@@ -187,44 +226,30 @@ class Pawn(Piece):
         self.move_range = constants.pawn_move_range[side]  # overload move_range for each Pawn depending on its side
 
     def prelegal_moves(self, board: "Board"):
+        ''' Prelegal moves of a pawn '''
         return super().prelegal_moves(board)  # TODO
 
-class Knight(Piece):
+class Knight(Leaper):
     move_range = [-12, -21, -19, -8, 12, 21, 19, 8]
     class_name = "knight"
     class_symbol = "n"
 
-    def prelegal_moves(self, board: "Board"):
-        return super().prelegal_moves(board)  # TODO
-
-class Bishop(Piece):
+class Bishop(Slider):
     move_range = [-11, -9, 11, 9]
     class_name = "bishop"
     class_symbol = "b"
 
-    def prelegal_moves(self, board: "Board"):
-        return super().prelegal_moves(board)  # TODO
-
-class Rook(Piece):
+class Rook(Slider):
     move_range = [-1, -10, 1, 10]
     class_name = "rook"
     class_symbol = "r"
 
-    def prelegal_moves(self, board: "Board"):
-        return super().prelegal_moves(board)  # TODO
-
-class Queen(Piece):
+class Queen(Slider):
     move_range = [-1, -11, -10, -9, 1, 11, 10, 9]
     class_name = "queen"
     class_symbol = "q"
 
-    def prelegal_moves(self, board: "Board"):
-        return super().prelegal_moves(board)  # TODO
-
-class King(Piece):
+class King(Leaper):
     move_range = [-1, -11, -10, -9, 1, 11, 10, 9]
     class_name = "king"
     class_symbol = "k"
-
-    def prelegal_moves(self, board: "Board"):
-        return super().prelegal_moves(board)  # TODO
