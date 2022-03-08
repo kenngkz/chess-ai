@@ -96,12 +96,13 @@ class Board:
 
     # PUT functions (changes some attr of Board obj)
 
-    def move_piece(self, start_cell, end_cell):
-        ''' Moves a piece from given start_cell to the end_cell '''
+    def move_piece(self, start_cell, final_cell):
+        ''' Moves a piece from given start_cell to the final_cell '''
         piece = self.position.pop(start_cell)  # raises KeyError if no piece exists in start_cell
-        self.position[end_cell] = piece
+        self.position[final_cell] = piece
+        piece.move_cell(final_cell)
         if piece is King:
-            self.king_position[piece.side*6] = end_cell
+            self.king_position[piece.side*6] = final_cell
 
     # Miscellaneous functions
 
@@ -291,6 +292,23 @@ class Pawn(Piece):
                 if jump_allowed:  # if pawn is in starting row
                     if board.occupant(candidate_cell) is EmptyCell:
                         yield candidate_cell
+
+    def candidate_move_cell(self, board:"Board"):
+        # forward move cells
+        candidate_cell = self.cell + self.move_range[0]
+        if board.occupant(candidate_cell) is EmptyCell:
+            yield candidate_cell, False  # 2nd output indicates whether or not to include in threat_map
+            jump_allowed = self.cell//10==8 if self.side == 1 else self.cell//10==3
+            candidate_cell = self.cell + self.move_range[1]
+            if jump_allowed:  # if pawn is in starting row
+                if board.occupant(candidate_cell) is EmptyCell:
+                    yield candidate_cell, False
+        # capture move cells
+        candidate_cells = [self.cell+self.move_range[2], self.cell+self.move_range[3]]
+        for candidate_cell in candidate_cells:
+            if board.valid_cell(candidate_cell):
+                yield candidate_cell, True
+        
 
 class Knight(Leaper):
     move_range = [-12, -21, -19, -8, 12, 21, 19, 8]
