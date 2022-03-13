@@ -62,7 +62,13 @@ class Board:
     
     def __init__(self, position=constants.initial_board_position):
         ''' Initialize Board from dict '''
-        self.position = self._position_add_pieces(position)
+        index_piece_mapping = {1:Pawn, 2:Knight, 3:Bishop, 4:Rook, 5:Queen, 6:King}
+        if type(list(position.values())[0]) == str:
+            symbol_index_mapping = {piece_class.symbol:-class_index for class_index, piece_class in index_piece_mapping.values()}
+            for class_index, piece_class in index_piece_mapping.values():
+                symbol_index_mapping[piece_class.symbol.upper()] = class_index
+            position = {cell:symbol_index_mapping[symbol] for cell, symbol in position.values()}
+        self.position = self._position_add_pieces(position, index_piece_mapping)
         self.king_position = self._get_king_position(position)
 
     @classmethod
@@ -104,11 +110,10 @@ class Board:
 
     # Miscellaneous functions
 
-    def _position_add_pieces(self, position:dict) -> dict:
+    def _position_add_pieces(self, position:dict, index_piece_mapping) -> dict:
         # mapping of piece index to Piece objects
-        piece_mapping = {1:Pawn, 2:Knight, 3:Bishop, 4:Rook, 5:Queen, 6:King}
         return {
-            cell : piece_mapping[abs(index)](utils.sign(index), cell)  # piece_mapping[] returns a Piece subclass, (sign(index), cell) initializes the object
+            cell : index_piece_mapping[abs(index)](utils.sign(index), cell)  # piece_mapping[] returns a Piece subclass, (sign(index), cell) initializes the object
              for cell, index in position.items()
             }
 
