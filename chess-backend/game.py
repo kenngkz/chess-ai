@@ -2,7 +2,7 @@
 Manages and runs the chess game.
 '''
 
-from chess_objects import Board, Move, Pawn, EmptyCell
+from chess_objects import Board, Move, Pawn, EmptyCell, King, Rook
 
 class GameState:
     pass  # TODO
@@ -19,7 +19,7 @@ class Game:
         self.move_history = []
         self.stalemate_counter = 0
         self.castle_status = {-5:True, -6:True, 5:True, 6:True}  # tracks whether castling is allowed
-        self.check_status = {-1:None, 1:None}
+        self.check_status = {-1:None, 1:None}  # specifies whether the side is under check
 
     @classmethod
     def load(cls):
@@ -32,12 +32,21 @@ class Game:
         Checks if game is over. 
         Returns None if not over, 0 if stalemate, 1 if White wins and -1 if Black wins
         '''
-        pass  # TODO
+        if self.stalemate_counter >= self.stalemate_steps:
+            return 0
+        for side in [-1, 1]:
+            if self.check_status[side]:
+                if len(self.legal_moves[side]) == 0:
+                    return -side
+            else:
+                if len(self.legal_moves[side]) == 0:
+                    return 0
+        return None
 
     def is_check(self, side):  # used by Game object user
         ''' Gets the check status for the given side for the current board position '''
         if self.check_status[side] == None:
-            self.check_status[side] = self.run_check(side, self.board)
+            self.check_status[side] = self._run_check(side, self.board)
         return self.check_status[side]
 
     def _run_check(self, side, board:"Board"):  # used for checking move legality
@@ -58,55 +67,60 @@ class Game:
 
     # Legal moves functions
 
-    def all_legal_moves(self, side):
-        ''' Generate all legal moves for a side. Gets check status for both sides as well as well '''
-        legal_moves = []
-        opponent_threat_map = []
+    def all_legal_moves(self):
+        ''' Generate all legal moves for both sides and saves as .legal_moves attribute. Gets check status for both sides as well as well '''
+        legal_moves = {-1:[], 1:[]}
+        threat_map = {-1:[], 1:[]}
         for piece in self.board.position.values():
-            if piece.side == side:
-                if isinstance(piece, Pawn):
-                    for cell, is_threat in piece.candidate_move_cell(self.board):
-                        move = None
-                        if is_threat:  # then it is a capture move cell
-                            # update current check_status
-                            if self.board.king_position[-side] == cell:
-                                self.check_status[-side] = True
-                            if self.board.occupant(cell).side == -side:  # then it is prelegal move
-                                move = Move(side, piece.cell, cell)
-                        else:  # then it is a forward move cell
-                            if self.board.occupant(cell) == EmptyCell:  # then it is prelegal move
-                                move = Move(side, piece.cell, cell)
+            if isinstance(piece, Pawn):
+                for cell, is_threat in piece.candidate_move_cell(self.board):
+                    move = None
+                    if is_threat:  # then it is a capture move cell
+                        threat_map[-piece.side].append(cell)
+                        if self.board.king_position[-piece.side] == cell:  # update current check_status
+                            self.check_status[-piece.side] = True
+                            print("Check discovered")
+                        if self.board.occupant(cell).side == -piece.side:  # then it is prelegal move
+                            move = Move(piece.side, piece.cell, cell)
+                    else:  # then it is a forward move cell
+                        if self.board.occupant(cell) == EmptyCell:  # then it is prelegal move
+                            move = Move(piece.side, piece.cell, cell)
 
-                        if move:  # if prelegal move, pseudomove and check_move_legality
-                            if self._check_move_legality(move):
-                                promo_allowed = piece.cell//10==3 if piece.side == 1 else piece.cell//10==8
-                                if promo_allowed: # handle promotion -> limit to queen and knight promotions
-                                    legal_moves += [Move(side, piece.cell, cell, 0, 2), Move(side, piece.cell, cell, 0, 5)]
-                                else:
-                                    legal_moves.append(move)
+                    if move:  # if prelegal move, check move legality
+                        if self._check_move_legality(move):
+                            promo_allowed = piece.cell//10==3 if piece.side == 1 else piece.cell//10==8
+                            if promo_allowed: # handle promotion -> limit to queen and knight promotions
+                                legal_moves += [Move(piece.side, piece.cell, cell, 0, 2), Move(piece.side, piece.cell, cell, 0, 5)]
+                            else:
+                                legal_moves[piece.side].append(move)
 
-                else:  # if not Pawn
-                    for cell in piece.threat_map_contribution(self.board):
-                        # TODO update current check_status
-                        if self.board.occupant(cell).side != side:   # then it is prelegal move
-                            move = Move(side, piece.cell, cell)
-                            # pseudomove and run check()
-                            if self._check_move_legality(move):
-                                legal_moves.append(move)
-            else:  # if enemy piece
-                opponent_threat_map += piece.threat_map_contribution(self.board)
+            else:  # if not Pawn
+                for cell in piece.threat_map_contribution(self.board):
+                    threat_map[-piece.side].append(cell)
+                    # update current check_status
+                    if self.board.king_position[-piece.side] == cell:
+                        self.check_status[-piece.side] = True
+                    if self.board.occupant(cell).side != piece.side:   # then it is prelegal move
+                        move = Move(piece.side, piece.cell, cell)
+                        # check move legality
+                        if self._check_move_legality(move):
+                            legal_moves[piece.side].append(move)
+                        else:
+                            print(f"Move {move} not legal")
 
-        # set check_status for ally side
-        self.check_status[side] = self.board.king_position[side] in opponent_threat_map
         # castling moves
-        if not self.check_status[side]:
-            for castle_type in self.castling_occupant_free[side]:
-                # check threat free cells -> cells must not be threatened to perform castling
-                if sum(cell in opponent_threat_map for cell in self.castling_threat_free[side][castle_type]) == 0:
-                    # check occupant free cells -> cells must not be occupied to perform castling
-                    if sum(not self.board.occupant(cell) is EmptyCell for cell in self.castling_occupant_free[side][castle_type]) == 0:
-                        legal_moves.append(Move(side, 0, 0, castle_type, 0))
-        return legal_moves
+        for side in [-1, 1]:
+            if self.check_status[side] == None:
+                self.check_status[side] = False
+            if not self.check_status[side]:
+                for castle_type in self.castling_occupant_free[side]:
+                    if self.castle_status[castle_type]:
+                        # check occupant free cells -> cells must not be occupied to perform castling
+                        if sum(not self.board.occupant(cell) is EmptyCell for cell in self.castling_occupant_free[side][castle_type]) == 0:
+                            # check threat free cells -> cells must not be threatened to perform castling
+                            if sum(cell in threat_map[side] for cell in self.castling_threat_free[side][castle_type]) == 0:
+                                legal_moves[side].append(Move(side, self.board.king_position[side], 0, castle_type, 0))
+        self.legal_moves = legal_moves
 
     def _check_move_legality(self, move:"Move"):
         ''' Checks whether a move is legal by making a move on a Board copy and checking if it places the King under check '''
@@ -118,6 +132,7 @@ class Game:
     def make_move(self, move:"Move", permanent=True):
         ''' Executes a move on current board. permanent=False to return new_board instead of updating current board '''
         new_board = self.board.copy()
+        piece = new_board.occupant(move.start)
         if move.castle_type:
             king_cells, rook_cells = move.castle_move_cells
             new_board.move_piece(*king_cells)
@@ -127,23 +142,16 @@ class Game:
         
         if permanent:
             self.board = new_board
-            # TODO: other move related attr -> stalemate counter, castle_status, reset check_status, legal_moves?
+            self.player_to_move *= -1
+            self.stalemate_counter += 1
+            if isinstance(piece, King):
+                self.castle_status[piece.side*5] = False
+                self.castle_status[piece.side*6] = False
+            elif isinstance(piece, Rook):
+                if piece.cell%10 == 1:
+                    self.castle_status[piece.side*5] = False
+                elif piece.cell%10 == 8:
+                    self.castle_status[piece.side*6] = False
+            self.check_status = {-1:None, 1:None}
         else:
             return new_board
-
-'''
-What do i need prelegal moves for?
-V1:
- - is_check: check if king cell is in opposing side's prelegal moves final_cell
- - legal_moves: spawn copy of board, execute candidate move and see if ally king is under check
-V2:
- - is_check not using prelegal: see if threat cells have the right threat type
- - legal_moves: spawn copy of board, execute candidate move and see if ally king is under check
-V3: 
- - set is_check when prelegal moves are being generated
-
-
-is there another way to run legal_moves?
-- bunch of ifelse?
-- threat maps: map of cells that are 
-'''

@@ -14,7 +14,6 @@ This script contains definitions for:
 
 from abc import ABC, abstractmethod
 from copy import deepcopy
-from tracemalloc import start
 
 import constants
 import utils
@@ -97,12 +96,11 @@ class Board:
 
     def move_piece(self, start_cell, final_cell):
         ''' Moves a piece from given start_cell to the final_cell '''
-        # print(f"Piece Moved: {self.occupant(start_cell)}. Cell movement: {start_cell} -> {final_cell}")
         piece = self.position.pop(start_cell)  # raises KeyError if no piece exists in start_cell
         self.position[final_cell] = piece
         piece.move_cell(final_cell)
-        if piece is King:
-            self.king_position[piece.side*6] = final_cell
+        if isinstance(piece, King):
+            self.king_position[piece.side] = final_cell
 
     # Miscellaneous functions
 
@@ -156,11 +154,6 @@ class Piece(ABC):
         self.symbol = self.class_symbol.upper() if self.side>0 else self.class_symbol
 
     @abstractmethod
-    def prelegal_moves(self, board:"Board"):
-        ''' Prelegal moves of a piece '''
-        pass
-
-    @abstractmethod
     def threat_map_contribution(self, board:"Board", include_forward=False):
         ''' Threat map contribution of a piece '''
         pass
@@ -191,18 +184,6 @@ class Piece(ABC):
 
 class Leaper(Piece):
     ''' Abstract subclass of Piece for Leaper pieces that have common function prelegal_moves() '''
-
-    def prelegal_moves(self, board: "Board"):
-        ''' Prelegal moves of a piece '''
-        valid_prelegal_cells = []
-        for direction in self.move_range:
-            new_cell = self.cell + direction
-            new_cell_occupant = board.occupant(new_cell)
-            if board.valid_cell(new_cell):
-                if new_cell_occupant is EmptyCell or new_cell_occupant.side != self.side:
-                    valid_prelegal_cells.append(new_cell)
-        return [Move(self.side, self.cell, new_cell) for new_cell in valid_prelegal_cells]
-
     def threat_map_contribution(self, board:"Board", include_forward=False):
         ''' Yield threat map contribution by the Leaper Piece obj '''
         for direction in self.move_range:
@@ -212,24 +193,6 @@ class Leaper(Piece):
 
 class Slider(Piece):
     ''' Abstract subclass of Piece for Slider pieces that have common function prelegal_moves() '''
-    def prelegal_moves(self, board: "Board"):
-        ''' Prelegal moves of a piece '''
-        valid_prelegal_cells = []
-        for direction in self.move_range:
-            for offset_magnitude in [1, 2, 3, 4, 5, 6, 7]:
-                new_cell = self.cell + direction * offset_magnitude
-                if board.valid_cell(new_cell):
-                    occupant = board.occupant(new_cell)
-                    if not occupant is EmptyCell:
-                        if occupant.side != self.side:
-                            valid_prelegal_cells.append(new_cell)
-                        break
-                    else:
-                        valid_prelegal_cells.append(new_cell)
-                else:
-                    break
-        return [Move(self.side, self.cell, new_cell) for new_cell in valid_prelegal_cells]
-
     def threat_map_contribution(self, board:"Board", include_forward=False):
         ''' YIelds threat map contribution of a Slider Piece obj '''
         for direction in self.move_range:
@@ -253,33 +216,6 @@ class Pawn(Piece):
     def __init__(self, side, cell):
         super().__init__(side, cell)
         self.move_range = constants.pawn_move_range[side]  # overload move_range for each Pawn depending on its side
-
-    def prelegal_moves(self, board: "Board"):
-        ''' Prelegal moves of a pawn '''
-        valid_prelegal_moves = []
-        candidate_cell = self.cell + self.move_range[0]
-        # forward moves
-        if board.valid_cell(candidate_cell):
-            occupant = board.occupant(candidate_cell)
-            if occupant is EmptyCell:
-                valid_prelegal_moves.append(Move(self.side, self.cell, candidate_cell))
-                candidate_cell = self.cell + self.move_range[1]
-                jump_allowed = self.cell//10==8 if self.side == 1 else self.cell//10==3
-                if jump_allowed:
-                    if board.valid_cell(candidate_cell):
-                        if board.occupant(candidate_cell) is EmptyCell:
-                            valid_prelegal_moves.append(Move(self.side, self.cell, candidate_cell))
-        # capture moves
-        candidate_cells = [self.cell+self.move_range[2], self.cell+self.move_range[3]]
-        for candidate_cell in candidate_cells:
-            if board.valid_cell(candidate_cell):
-                if board.occupant(candidate_cell).side == -self.side:
-                    valid_prelegal_moves.append(Move(self.side, self.cell, candidate_cell))
-        # if in promotion position (2nd last row), convert all moves into promotion moves
-        promo_allowed = self.cell//10==3 if self.side == 1 else self.cell//10==8
-        if promo_allowed:
-            return [Move(self.side, self.cell, move.final, 0, promo_val) for promo_val in [2, 3, 4, 5] for move in valid_prelegal_moves]
-        return valid_prelegal_moves
 
     def threat_map_contribution(self, board: "Board", include_forward=False):
         ''' Yield threat map contribution cells of a Pawn object '''
