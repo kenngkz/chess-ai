@@ -13,17 +13,16 @@ This script contains definitions for:
 '''
 
 from abc import ABC, abstractmethod
+from copy import deepcopy
+from tracemalloc import start
 
 import constants
 import utils
 
 class Move:
 
-    # mapping from castle type to change in position
-    castle_positions_mapping = {0:0, -5:((25, 23), (21, 24)), -6:((25,27), (28, 26)), 5:((95, 93), (91, 94)), 6:((95, 97), (98, 96))}
-
     # start_cells and final_cells for castle types
-    castle_direction = {0:None, -5:((25, 23), (21, 24)), -6:((25,27), (28, 26)), 5:((95, 93), (91, 94)), 6:((95, 97), (98, 96))}
+    castle_move_cells_mapping = {0:None, -5:((25, 23), (21, 24)), -6:((25,27), (28, 26)), 5:((95, 93), (91, 94)), 6:((95, 97), (98, 96))}
 
     def __init__(self,side:int, start_cell:int, final_cell:int, castle_type:int = 0, promo:int = 0):
         '''
@@ -38,7 +37,7 @@ class Move:
         self.start = start_cell
         self.final = final_cell
         self.castle_type = castle_type
-        self.castle_positions = self.castle_direction[castle_type]
+        self.castle_move_cells = self.castle_move_cells_mapping[castle_type]
         self.promo = promo
 
     def __repr__(self) -> str:
@@ -91,13 +90,14 @@ class Board:
         king_position = {}
         for cell, index in position.items():
             if abs(index) == 6:
-                king_position[index] = cell
+                king_position[utils.sign(index)] = cell
         return king_position
 
     # PUT functions (changes some attr of Board obj)
 
     def move_piece(self, start_cell, final_cell):
         ''' Moves a piece from given start_cell to the final_cell '''
+        # print(f"Piece Moved: {self.occupant(start_cell)}. Cell movement: {start_cell} -> {final_cell}")
         piece = self.position.pop(start_cell)  # raises KeyError if no piece exists in start_cell
         self.position[final_cell] = piece
         piece.move_cell(final_cell)
@@ -116,19 +116,20 @@ class Board:
 
     def __repr__(self):
         # board position
-        out = "     0  1  2  3  4  5  6  7  \n  +-------------------------+\n"
+        out = "     1  2  3  4  5  6  7  8  \n  +-------------------------+\n"
         for row in range(8):
-            row_str = str(row) + " | "
+            row_str = str(row+2) + " | "
             for col in range(8):
                 row_str += f" {self.occupant(21 + 10*row + col).symbol} "
             out += row_str + "|\n"
         out += "  +-------------------------+\n"
-        # castle status
-        enabled_disabled_mapping = {True:"Enabled", False:"Disabled"}
-        out += "Castle Status:\n"
-        for castle_type, status in self.castle_status.items():
-            out += f"    {constants.castle_names[castle_type]} -- {enabled_disabled_mapping[status]}\n"
         return out
+
+    def copy(self):
+        new_board = Board({21:6, 23:-6})
+        new_board.position = deepcopy(self.position)
+        new_board.king_position = self.king_position.copy()
+        return new_board
 
 
 ######################
@@ -184,6 +185,9 @@ class Piece(ABC):
 
     def move_cell(self, new_cell):
         self.cell = new_cell
+
+    def info(self):
+        return (f"Piece - Name: {self.name}, Cell: {self.cell}")
 
 class Leaper(Piece):
     ''' Abstract subclass of Piece for Leaper pieces that have common function prelegal_moves() '''
