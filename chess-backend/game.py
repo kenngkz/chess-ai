@@ -3,9 +3,42 @@ Manages and runs the chess game.
 '''
 
 from chess_objects import Board, Move, Pawn, EmptyCell, King, Rook
+import utils
 
 class GameState:
-    pass  # TODO
+
+    def __init__(self, game_obj:"Game"):
+        self.position = game_obj.board.position
+        self.player_to_move = game_obj.player_to_move
+        self.move_counter = game_obj.move_counter
+        self.move_history = game_obj.move_history
+        self.stalemate_counter = game_obj.stalemate_counter
+        self.castle_status = game_obj.castle_status
+
+    @classmethod
+    def load(cls, filepath):
+        ''' Load from json file. Can call Game.load to generate Game obj directly from file. '''
+        with open(filepath, "r") as f:
+            data = eval(f.read())
+        blank_game = Game()
+        for name, val in data.values():
+            blank_game.__dict__[name] = val
+        return cls(blank_game)
+
+    @classmethod
+    def from_dict(cls, data):
+        game_state = cls(Game())
+        for name, val in data.values():
+            game_state.__dict__[name] = val
+        return game_state
+
+    def save(self, filename, folder=None):
+        ''' Save as a json file '''
+        data = {name:val for name, val in self.__dict__.values()}
+        filename += ".json"
+        filepath = utils.path_join(filename, folder)
+        with open(filepath, "w") as f:
+            f.write(data)
 
 class Game:
     stalemate_steps = 50
@@ -20,10 +53,17 @@ class Game:
         self.stalemate_counter = 0
         self.castle_status = {-5:True, -6:True, 5:True, 6:True}  # tracks whether castling is allowed
         self.check_status = {-1:None, 1:None}  # specifies whether the side is under check
+        self.legal_moves = {-1:None, 1:None}
 
     @classmethod
-    def load(cls):
-        pass # TODO
+    def load(cls, filepath):
+        ''' Load Game object from GameState save file '''
+        with open(filepath, "r") as f:
+            data = eval(f.read())
+        blank_game = Game()
+        for name, val in data.values():
+            blank_game.__dict__[name] = val
+        return blank_game
 
     # Game state functions
 
@@ -63,7 +103,7 @@ class Game:
         return False
 
     def get_state(self):
-        pass   # TODO
+        return GameState(self)
 
     # Legal moves functions
 
@@ -144,6 +184,7 @@ class Game:
             self.board = new_board
             self.player_to_move *= -1
             self.stalemate_counter += 1
+            self.move_counter += 1
             if isinstance(piece, King):
                 self.castle_status[piece.side*5] = False
                 self.castle_status[piece.side*6] = False
