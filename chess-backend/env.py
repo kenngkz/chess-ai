@@ -1,4 +1,5 @@
 from game import Game, GameState
+from agent import RandomAgent
 import utils
 
 import numpy as np
@@ -30,19 +31,33 @@ class ChessEnv:
 
     def __init__(self, opponent=None):
         self.game = None
+        # built-in opponents
+        built_in_opp = {"random":RandomAgent}
+        if isinstance(opponent, str):
+            if not opponent in built_in_opp:
+                print(f"Warning: opponent {opponent} not in built-in opponents. Default to None")
+                opponent = None
+            else:
+                opponent = built_in_opp.get(opponent)()  # initialize the built-in opponent
         self.opponent = opponent
 
-    @classmethod  # do i need this? can use set_state instead
-    def load(self, filepath):
-        pass
+    @classmethod
+    def load(cls, filepath, opponent=None):
+        ''' Load env from gamestate save file. Opponent must be specified if not None '''
+        gamestate = GameState.load(filepath)
+        env = cls()
+        env.set_state(gamestate)
+        return env
 
     def reset(self):
+        ''' Resets the env and returns the starting obs'''
         self.game = Game()
         self.game.all_legal_moves()
         self.action_space = self.game.legal_moves[self.game.player_to_move]
         return tuple([*utils.dict_to_arr(self.game.board.position).flatten(), *list(self.game.castle_status.values()), *self.game.check_status.values()])
 
     def step(self, action):
+        ''' Take a single action in the environment '''
         assert action in self.action_space, f"Action {action} not in action_space"
         self.game.make_move(action, permanent=True)
         self.game.all_legal_moves()
@@ -52,7 +67,9 @@ class ChessEnv:
         return obs, self.action_space, done, None
 
     def set_state(self, gamestate:"GameState", opponent=None):
-        self.game = Game.load()
+        ''' Set the game to a specified gamestate '''
+        self.game = Game.load(gamestate)
+        self.opponent = opponent
 
     def render(self):
         ''' Prints the board position in console '''
@@ -64,4 +81,8 @@ class ChessEnv:
 
     def save(self):
         ''' Returns EnvSave obj with current game state'''
+        pass
+
+    def run_opponent_move(self):
+        ''' Get the opponent to select a move and executes it. '''
         pass
