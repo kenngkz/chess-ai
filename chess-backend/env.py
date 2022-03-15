@@ -29,7 +29,8 @@ class ChessEnv:
         - 2 entries specifying whether each side is under check (order: white, black)
     '''
 
-    def __init__(self, opponent=None):
+    def __init__(self, opponent=None, player=1):
+        ''' Initialization. player=1 if human player is white, -1 if black. player not required if opponent=None '''
         self.game = None
         # built-in opponents
         built_in_opp = {"random":RandomAgent}
@@ -40,6 +41,7 @@ class ChessEnv:
             else:
                 opponent = built_in_opp.get(opponent)()  # initialize the built-in opponent
         self.opponent = opponent
+        self.player = player
 
     @classmethod
     def load(cls, filepath, opponent=None):
@@ -64,7 +66,10 @@ class ChessEnv:
         self.action_space = self.game.legal_moves[self.game.player_to_move]
         obs = tuple([*utils.dict_to_arr(self.game.board.position).flatten(), *list(self.game.castle_status.values()), *self.game.check_status.values()])
         done = self.game.game_over() != None
-        return obs, self.action_space, done, None
+        if self.opponent!=None and self.game.player_to_move != self.player:
+            return self.step_opponent()
+        else:
+            return obs, self.action_space, done, None
 
     def set_state(self, gamestate:"GameState", opponent=None):
         ''' Set the game to a specified gamestate '''
@@ -79,10 +84,16 @@ class ChessEnv:
         ''' Prints the legal moves in console '''
         pass
 
-    def save(self):
-        ''' Returns EnvSave obj with current game state'''
-        pass
+    def save(self, filename=None, folder=None):
+        ''' Saves a GameState file at filepath. Returns GameState if filepath is not provided. '''
+        gamestate = GameState(self.game)
+        if filename:
+            gamestate.save(filename, folder)
+        else:
+            return gamestate
+                
 
-    def run_opponent_move(self):
+    def step_opponent(self):
         ''' Get the opponent to select a move and executes it. '''
-        pass
+        action = self.opponent.pred(self.action_space)
+        return self.step(action)
