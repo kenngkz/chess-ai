@@ -16,21 +16,21 @@ class GameState:
         self.castle_status = game_obj.castle_status
 
     @classmethod
-    def load(cls, filepath):
-        ''' Load from json file. Can call Game.load to generate Game obj directly from file. '''
-        with open(filepath, "r") as f:
-            data = eval(f.read())
-        blank_game = Game()
-        for name, val in data.values():
-            blank_game.__dict__[name] = val
-        return cls(blank_game)
-
-    @classmethod
-    def from_dict(cls, data):
-        game_state = cls(Game())
-        for name, val in data.values():
-            game_state.__dict__[name] = val
-        return game_state
+    def load(cls, state_source):
+        '''
+        Load from json file or dict. 
+        Note: Can call Game.load in the Game class to generate Game obj directly from file.
+        '''
+        blank_state = cls(Game())
+        if isinstance(state_source, str):
+            with open(state_source, "r") as f:
+                data = eval(f.read())
+            for name, val in data.values():
+                blank_state.__dict__[name] = val
+        elif isinstance(state_source, dict):
+            for name, val in state_source.values():
+                blank_state.__dict__[name] = val
+        return blank_state
 
     def save(self, filename, folder=None):
         ''' Save as a json file '''
@@ -56,13 +56,17 @@ class Game:
         self.legal_moves = {-1:None, 1:None}
 
     @classmethod
-    def load(cls, filepath):
-        ''' Load Game object from GameState save file '''
-        with open(filepath, "r") as f:
-            data = eval(f.read())
+    def load(cls, state_source):
+        ''' Load Game object from GameState save file or GameState obj'''
         blank_game = Game()
-        for name, val in data.values():
-            blank_game.__dict__[name] = val
+        if isinstance(state_source, GameState):
+            for name, val in GameState.__dict__.values():
+                blank_game.__dict__[name] = val
+        elif isinstance(state_source, str):
+            with open(state_source, "r") as f:
+                data = eval(f.read())
+            for name, val in data.values():
+                blank_game.__dict__[name] = val
         return blank_game
 
     # Game state functions

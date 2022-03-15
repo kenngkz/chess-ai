@@ -1,4 +1,4 @@
-from game import Game
+from game import Game, GameState
 import utils
 
 import numpy as np
@@ -39,17 +39,27 @@ class ChessEnv:
     def reset(self):
         self.game = Game()
         self.game.all_legal_moves()
-        self.action_space = self.game.legal_moves
+        self.action_space = self.game.legal_moves[self.game.player_to_move]
         return tuple([*utils.dict_to_arr(self.game.board.position).flatten(), *list(self.game.castle_status.values()), *self.game.check_status.values()])
 
     def step(self, action):
-        pass
+        assert action in self.action_space, f"Action {action} not in action_space"
+        self.game.make_move(action, permanent=True)
+        self.game.all_legal_moves()
+        self.action_space = self.game.legal_moves[self.game.player_to_move]
+        obs = tuple([*utils.dict_to_arr(self.game.board.position).flatten(), *list(self.game.castle_status.values()), *self.game.check_status.values()])
+        done = self.game.game_over() != None
+        return obs, self.action_space, done, None
 
-    def set_state(self, state:"EnvSave"):
-        pass
+    def set_state(self, gamestate:"GameState", opponent=None):
+        self.game = Game.load()
 
     def render(self):
         ''' Prints the board position in console '''
+        pass
+
+    def render_actions(self):
+        ''' Prints the legal moves in console '''
         pass
 
     def save(self):
