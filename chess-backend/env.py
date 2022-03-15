@@ -22,6 +22,7 @@ class ChessEnv:
     def __init__(self, white=None, black=None):
         ''' Initialization. player=1 if human player is white, -1 if black. player not required if opponent=None '''
         self.game = None
+        self.done = True
         # built-in opponents
         built_in_opp = {"random":RandomAgent}
         self.players = {}
@@ -49,25 +50,31 @@ class ChessEnv:
         self.game = Game()
         self.game.all_legal_moves()
         self.action_space = self.game.legal_moves[self.game.player_to_move]
+        self.done = False
         return tuple([*self.game.board.to_arr().flatten(), *list(self.game.castle_status.values()), *self.game.check_status.values()])
 
     def step(self, action):
         ''' Take a single action in the environment '''
         assert action in self.action_space, f"Action {action} not in action_space"
+        assert not self.done, "Environment is completed. Run .reset() to reset the environment"
         self.game.make_move(action, permanent=True)
         self.game.all_legal_moves()
         self.action_space = self.game.legal_moves[self.game.player_to_move]
         obs = tuple([*self.game.board.to_arr().flatten(), *list(self.game.castle_status.values()), *self.game.check_status.values()])
         game_over = self.game.game_over()
+        self.done = game_over != None
         reward = 0 if game_over==None else 0.5*(self.game.player_to_move*game_over+1)
-        if self.players[self.game.player_to_move] != None and game_over!=None:
+        if self.players[self.game.player_to_move] != None and not self.done:
             return self.step_player()
         else:
-            return obs, reward, game_over!=None, None
+            return obs, reward, self.done, None
 
     def set_state(self, gamestate:"GameState"):
         ''' Set the game to a specified gamestate '''
         self.game = Game.load(gamestate)
+        self.game.all_legal_moves()
+        self.action_space = self.game.legal_moves[self.game.player_to_move]
+        self.done = self.game.game_over() != None
 
     def get_state(self):
         ''' Gets the gamestate '''
@@ -98,3 +105,9 @@ class ChessEnv:
 
     def sample_action(self):
         return random.choice(self.action_space)
+
+    def copy(self):
+        gamestate = self.get_state()
+        new_env = ChessEnv(self.players[1], self.players[-1])
+        new_env.set_state(gamestate)
+        return new_env

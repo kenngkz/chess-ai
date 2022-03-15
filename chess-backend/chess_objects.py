@@ -138,9 +138,9 @@ class Board:
         return new_board
 
 
-######################
-###     PIECES     ###
-######################
+####################
+###    PIECES    ###
+####################
 
 class EmptyCell:
     name = "Empty cell"
