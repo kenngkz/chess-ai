@@ -11,20 +11,8 @@ clear_console = lambda: os.system("cls")
 class ChessEnvCheckpoint:
 
     def __init__(self, chessenv):
-        self.gamestate = chessenv.game.save()
+        self.gamestate = chessenv.game.get_state()
         self.players = chessenv.players
-
-    def save(self, filename=None, folder=None):
-        data = {"gamestate":{}, "players":self.players}
-        for name, val in self.gamestate.items():
-            data[name] = val
-        if filename:
-            filename += ".json"
-            filename = utils.path_join(folder, filename)
-            with open(filename, "w") as f:
-                f.write(data)
-        else:
-            return data
 
     @classmethod
     def load(cls, state_source, players=None):
@@ -42,6 +30,18 @@ class ChessEnvCheckpoint:
                 blank_gamestate.__dict__[name] = val
             players = state_source["players"]
         return cls(blank_gamestate, players)
+
+    def save(self, filename, folder=None):
+        filename += ".json"
+        filename = utils.path_join(folder, filename)
+        with open(filename, "w") as f:
+            f.write(self.data())
+
+    def data(self):
+        data = {"gamestate":{}, "players":self.players}
+        for name, val in self.gamestate.items():
+            data["gamestate"][name] = val
+        return data
 
 class ChessEnv:
     '''
@@ -72,10 +72,10 @@ class ChessEnv:
 
 
     @classmethod
-    def load(cls, filepath):
-        ''' Load env from gamestate save file. Opponent must be specified if not None '''  # TODO
+    def load(cls, filepath, white=None, black=None):
+        ''' Load env from gamestate save file. Players must be specified if not None '''
         gamestate = GameState.load(filepath)
-        env = cls()
+        env = cls(white, black)
         env.set_state(gamestate)
         return env
 
@@ -100,31 +100,31 @@ class ChessEnv:
         else:
             return obs, reward, game_over!=None, None
 
-    def set_state(self, checkpoint):
-        ''' Set the game to a specified gamestate '''  # TODO
+    def set_state(self, gamestate:"GameState"):
+        ''' Set the game to a specified gamestate '''
         self.game = Game.load(gamestate)
-        self.opponent = opponent
+
+    def get_state(self):
+        ''' Gets the gamestate '''
+        return self.game.get_state()
 
     def render(self, delay=0, clear=False):
         ''' Prints the board position in console '''
+        if clear:
+            clear_console()  # execute system call to clear console
         print(f"Turn {self.game.move_counter}")
         print(self.game.board)
         time.sleep(delay)
-        if clear:
-            clear_console()  # execute system call to clear console
 
     def render_actions(self):
         ''' Prints the legal moves in console '''
         for i, move in enumerate(self.action_space):
             print(f"{i} - {move}")
 
-    def save(self, filename=None, folder=None):
+    def save(self, filename, folder=None):
         ''' Saves a GameState file at filepath. Returns GameState if filepath is not provided. '''
         gamestate = GameState(self.game)
-        if filename:
-            gamestate.save(filename, folder)  # TODO
-        else:
-            return gamestate
+        gamestate.save(filename, folder)  # TODO
 
     def step_player(self):
         ''' Get the player to select a move and executes it. Must an object that inherits from Agent.'''

@@ -85,9 +85,13 @@ class Board:
         ''' Return True if the given cell is valid '''
         return cell in constants.valid_cells
 
+    def to_dict(self):
+        ''' Retuns a dict representation of the Board position '''
+        return {cell:piece.class_index*piece.side for cell, piece in self.position.items()}
+
     def to_arr(self):
         ''' Returns an array representation of the Board position '''
-        return utils.dict_to_arr({cell:piece.class_index*piece.side for cell, piece in self.position.items()})
+        return utils.dict_to_arr(self.to_dict())
 
     def _get_king_position(self, position):
         ''' Returns the positions of the 2 kings '''

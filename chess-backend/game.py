@@ -5,13 +5,15 @@ Manages and runs the chess game.
 from chess_objects import Board, Move, Pawn, EmptyCell, King, Rook
 import utils
 
+from copy import deepcopy
+
 class GameState:
 
     def __init__(self, game_obj:"Game"):
-        self.position = game_obj.board.position
+        self.position = deepcopy(game_obj.board.to_dict())  # dict is mutable
         self.player_to_move = game_obj.player_to_move
         self.move_counter = game_obj.move_counter
-        self.move_history = game_obj.move_history
+        self.move_history = deepcopy(game_obj.move_history)  # list is mutable
         self.stalemate_counter = game_obj.stalemate_counter
         self.castle_status = game_obj.castle_status
 
@@ -60,8 +62,11 @@ class Game:
         ''' Load Game object from GameState save file or GameState obj'''
         blank_game = Game()
         if isinstance(state_source, GameState):
-            for name, val in GameState.__dict__.values():
-                blank_game.__dict__[name] = val
+            for name, val in state_source.__dict__.items():
+                if name == "position":
+                    blank_game.board = Board(val)
+                else:
+                    blank_game.__dict__[name] = val
         elif isinstance(state_source, str):
             with open(state_source, "r") as f:
                 data = eval(f.read())
@@ -174,6 +179,7 @@ class Game:
         ''' Executes a move on current board. permanent=False to return new_board instead of updating current board '''
         new_board = self.board.copy()
         piece = new_board.occupant(move.start)
+        n_pieces = len(new_board.position)
         if move.castle_type:
             king_cells, rook_cells = move.castle_move_cells
             new_board.move_piece(*king_cells)
@@ -184,8 +190,12 @@ class Game:
         if permanent:
             self.board = new_board
             self.player_to_move *= -1
-            self.stalemate_counter += 1
+            if isinstance(piece, Pawn) or n_pieces > len(new_board.position):
+                self.stalemate_counter = 0
+            else:
+                self.stalemate_counter += 1
             self.move_counter += 1
+            self.move_history.append(move.to_tuple())
             if isinstance(piece, King):
                 self.castle_status[piece.side*5] = False
                 self.castle_status[piece.side*6] = False
