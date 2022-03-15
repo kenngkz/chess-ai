@@ -8,41 +8,6 @@ import random
 
 clear_console = lambda: os.system("cls")
 
-class ChessEnvCheckpoint:
-
-    def __init__(self, chessenv):
-        self.gamestate = chessenv.game.get_state()
-        self.players = chessenv.players
-
-    @classmethod
-    def load(cls, state_source, players=None):
-        ''' Load ChessEnvCheckpoint from file or dict. '''
-        blank_gamestate = GameState()
-        if isinstance(state_source, str):
-            with open(state_source, "r") as f:
-                data = eval(f.read())
-            for name, val in data["gamestate"].values():
-                blank_gamestate.__dict__[name] = val
-            players = data["players"]
-        elif isinstance(state_source, dict):
-            game_data = state_source["gamestate"]
-            for name, val in game_data.values():
-                blank_gamestate.__dict__[name] = val
-            players = state_source["players"]
-        return cls(blank_gamestate, players)
-
-    def save(self, filename, folder=None):
-        filename += ".json"
-        filename = utils.path_join(folder, filename)
-        with open(filename, "w") as f:
-            f.write(self.data())
-
-    def data(self):
-        data = {"gamestate":{}, "players":self.players}
-        for name, val in self.gamestate.items():
-            data["gamestate"][name] = val
-        return data
-
 class ChessEnv:
     '''
     Chess-v0
@@ -124,7 +89,7 @@ class ChessEnv:
     def save(self, filename, folder=None):
         ''' Saves a GameState file at filepath. Returns GameState if filepath is not provided. '''
         gamestate = GameState(self.game)
-        gamestate.save(filename, folder)  # TODO
+        gamestate.save(filename, folder)
 
     def step_player(self):
         ''' Get the player to select a move and executes it. Must an object that inherits from Agent.'''
