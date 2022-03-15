@@ -2,21 +2,11 @@ from game import Game, GameState
 from agent import RandomAgent
 import utils
 
-import numpy as np
+import time
+import os
+import random
 
-# class EnvSave:
-    
-#     def __init__(self):
-#         pass
-    
-#     def save_to_file(self, filename):
-#         ''' Saves an EnvSave obj to a file '''
-#         pass
-
-#     @classmethod
-#     def load_file(cls, filename):
-#         ''' Load an EnvSave obj from a save file '''
-#         pass
+clear_console = lambda: os.system("cls")
 
 class ChessEnv:
     '''
@@ -29,19 +19,22 @@ class ChessEnv:
         - 2 entries specifying whether each side is under check (order: white, black)
     '''
 
-    def __init__(self, opponent=None, player=1):
+    def __init__(self, white=None, black=None):
         ''' Initialization. player=1 if human player is white, -1 if black. player not required if opponent=None '''
         self.game = None
         # built-in opponents
         built_in_opp = {"random":RandomAgent}
-        if isinstance(opponent, str):
-            if not opponent in built_in_opp:
-                print(f"Warning: opponent {opponent} not in built-in opponents. Default to None")
-                opponent = None
-            else:
-                opponent = built_in_opp.get(opponent)()  # initialize the built-in opponent
-        self.opponent = opponent
-        self.player = player
+        self.players = {}
+        players = {-1:black, 1:white}
+        for side, agent in players.items():
+            if isinstance(agent, str):
+                if not agent in built_in_opp:
+                    print(f"Warning: Agent {agent} with side {side} not in built-in opponents. Default to None")
+                    agent = None
+                else:
+                    agent = built_in_opp.get(agent)()  # initialize the built-in opponent
+            self.players[side] = agent
+
 
     @classmethod
     def load(cls, filepath, opponent=None):
@@ -56,7 +49,7 @@ class ChessEnv:
         self.game = Game()
         self.game.all_legal_moves()
         self.action_space = self.game.legal_moves[self.game.player_to_move]
-        return tuple([*utils.dict_to_arr(self.game.board.position).flatten(), *list(self.game.castle_status.values()), *self.game.check_status.values()])
+        return tuple([*self.game.board.to_arr().flatten(), *list(self.game.castle_status.values()), *self.game.check_status.values()])
 
     def step(self, action):
         ''' Take a single action in the environment '''
@@ -64,25 +57,31 @@ class ChessEnv:
         self.game.make_move(action, permanent=True)
         self.game.all_legal_moves()
         self.action_space = self.game.legal_moves[self.game.player_to_move]
-        obs = tuple([*utils.dict_to_arr(self.game.board.position).flatten(), *list(self.game.castle_status.values()), *self.game.check_status.values()])
-        done = self.game.game_over() != None
-        if self.opponent!=None and self.game.player_to_move != self.player:
-            return self.step_opponent()
+        obs = tuple([*self.game.board.to_arr().flatten(), *list(self.game.castle_status.values()), *self.game.check_status.values()])
+        game_over = self.game.game_over()
+        reward = 0 if game_over==None else 0.5*(self.game.player_to_move*game_over+1)
+        if self.players[self.game.player_to_move] != None and game_over!=None:
+            return self.step_player()
         else:
-            return obs, self.action_space, done, None
+            return obs, reward, game_over!=None, None
 
     def set_state(self, gamestate:"GameState", opponent=None):
         ''' Set the game to a specified gamestate '''
         self.game = Game.load(gamestate)
         self.opponent = opponent
 
-    def render(self):
+    def render(self, delay=0, clear=False):
         ''' Prints the board position in console '''
-        pass
+        print(f"Turn {self.game.move_counter}")
+        print(self.game.board)
+        time.sleep(delay)
+        if clear:
+            clear_console()  # execute system call to clear console
 
     def render_actions(self):
         ''' Prints the legal moves in console '''
-        pass
+        for i, move in enumerate(self.action_space):
+            print(f"{i} - {move}")
 
     def save(self, filename=None, folder=None):
         ''' Saves a GameState file at filepath. Returns GameState if filepath is not provided. '''
@@ -91,9 +90,11 @@ class ChessEnv:
             gamestate.save(filename, folder)
         else:
             return gamestate
-                
 
-    def step_opponent(self):
-        ''' Get the opponent to select a move and executes it. '''
-        action = self.opponent.pred(self.action_space)
+    def step_player(self):
+        ''' Get the player to select a move and executes it. Must an object that inherits from Agent.'''
+        action = self.players[self.game.player_to_move].pred(self.action_space)
         return self.step(action)
+
+    def sample_action(self):
+        return random.choice(self.action_space)

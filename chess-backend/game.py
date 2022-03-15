@@ -123,7 +123,6 @@ class Game:
                         threat_map[-piece.side].append(cell)
                         if self.board.king_position[-piece.side] == cell:  # update current check_status
                             self.check_status[-piece.side] = True
-                            print("Check discovered")
                         if self.board.occupant(cell).side == -piece.side:  # then it is prelegal move
                             move = Move(piece.side, piece.cell, cell)
                     else:  # then it is a forward move cell
@@ -149,8 +148,6 @@ class Game:
                         # check move legality
                         if self._check_move_legality(move):
                             legal_moves[piece.side].append(move)
-                        else:
-                            print(f"Move {move} not legal")
 
         # castling moves
         for side in [-1, 1]:

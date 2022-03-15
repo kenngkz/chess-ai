@@ -59,16 +59,15 @@ class Move:
         return (self.side, self.start, self.final, self.castle_type, self.promo)
 
 class Board:
-    
     def __init__(self, position=constants.initial_board_position):
         ''' Initialize Board from dict '''
-        index_piece_mapping = {1:Pawn, 2:Knight, 3:Bishop, 4:Rook, 5:Queen, 6:King}
-        if type(list(position.values())[0]) == str:
-            symbol_index_mapping = {piece_class.symbol:-class_index for class_index, piece_class in index_piece_mapping.values()}
-            for class_index, piece_class in index_piece_mapping.values():
+        self.index_piece_mapping = {piece.class_index:piece for piece in [Pawn, Knight, Bishop, Rook, Queen, King]}
+        if type(list(position.values())[0]) == str:  # convert str symbols for pieces into Piece types
+            symbol_index_mapping = {piece_class.symbol:-class_index for class_index, piece_class in self.index_piece_mapping.values()}
+            for class_index, piece_class in self.index_piece_mapping.values():
                 symbol_index_mapping[piece_class.symbol.upper()] = class_index
             position = {cell:symbol_index_mapping[symbol] for cell, symbol in position.values()}
-        self.position = self._position_add_pieces(position, index_piece_mapping)
+        self.position = self._position_add_pieces(position)
         self.king_position = self._get_king_position(position)
 
     @classmethod
@@ -88,7 +87,7 @@ class Board:
 
     def to_arr(self):
         ''' Returns an array representation of the Board position '''
-        return utils.dict_to_arr(self.position)
+        return utils.dict_to_arr({cell:piece.class_index*piece.side for cell, piece in self.position.items()})
 
     def _get_king_position(self, position):
         ''' Returns the positions of the 2 kings '''
@@ -110,10 +109,10 @@ class Board:
 
     # Miscellaneous functions
 
-    def _position_add_pieces(self, position:dict, index_piece_mapping) -> dict:
-        # mapping of piece index to Piece objects
+    def _position_add_pieces(self, position:dict) -> dict:
+        ''' Takes in a position with piece indices and convert it to Piece objects '''
         return {
-            cell : index_piece_mapping[abs(index)](utils.sign(index), cell)  # piece_mapping[] returns a Piece subclass, (sign(index), cell) initializes the object
+            cell : self.index_piece_mapping[abs(index)](utils.sign(index), cell)  # index_piece_mapping[] returns a Piece subclass, (sign(index), cell) initializes the object
              for cell, index in position.items()
             }
 
@@ -181,6 +180,12 @@ class Piece(ABC):
         ''' Symbol of the piece type '''
         pass
 
+    @property
+    @abstractmethod
+    def class_index(self):
+        ''' Int index of the piece type '''
+        pass
+
     def move_cell(self, new_cell):
         self.cell = new_cell
 
@@ -217,6 +222,7 @@ class Pawn(Piece):
     move_range = None
     class_name = "pawn"
     class_symbol = "p"
+    class_index = 1
 
     def __init__(self, side, cell):
         super().__init__(side, cell)
@@ -259,23 +265,28 @@ class Knight(Leaper):
     move_range = [-12, -21, -19, -8, 12, 21, 19, 8]
     class_name = "knight"
     class_symbol = "n"
+    class_index = 2
 
 class Bishop(Slider):
     move_range = [-11, -9, 11, 9]
     class_name = "bishop"
     class_symbol = "b"
+    class_index = 3
 
 class Rook(Slider):
     move_range = [-1, -10, 1, 10]
     class_name = "rook"
     class_symbol = "r"
+    class_index = 4
 
 class Queen(Slider):
     move_range = [-1, -11, -10, -9, 1, 11, 10, 9]
     class_name = "queen"
     class_symbol = "q"
+    class_index = 5
 
 class King(Leaper):
     move_range = [-1, -11, -10, -9, 1, 11, 10, 9]
     class_name = "king"
     class_symbol = "k"
+    class_index = 6
