@@ -8,6 +8,41 @@ import random
 
 clear_console = lambda: os.system("cls")
 
+class ChessEnvCheckpoint:
+
+    def __init__(self, chessenv):
+        self.gamestate = chessenv.game.save()
+        self.players = chessenv.players
+
+    def save(self, filename=None, folder=None):
+        data = {"gamestate":{}, "players":self.players}
+        for name, val in self.gamestate.items():
+            data[name] = val
+        if filename:
+            filename += ".json"
+            filename = utils.path_join(folder, filename)
+            with open(filename, "w") as f:
+                f.write(data)
+        else:
+            return data
+
+    @classmethod
+    def load(cls, state_source, players=None):
+        ''' Load ChessEnvCheckpoint from file or dict. '''
+        blank_gamestate = GameState()
+        if isinstance(state_source, str):
+            with open(state_source, "r") as f:
+                data = eval(f.read())
+            for name, val in data["gamestate"].values():
+                blank_gamestate.__dict__[name] = val
+            players = data["players"]
+        elif isinstance(state_source, dict):
+            game_data = state_source["gamestate"]
+            for name, val in game_data.values():
+                blank_gamestate.__dict__[name] = val
+            players = state_source["players"]
+        return cls(blank_gamestate, players)
+
 class ChessEnv:
     '''
     Chess-v0
@@ -37,8 +72,8 @@ class ChessEnv:
 
 
     @classmethod
-    def load(cls, filepath, opponent=None):
-        ''' Load env from gamestate save file. Opponent must be specified if not None '''
+    def load(cls, filepath):
+        ''' Load env from gamestate save file. Opponent must be specified if not None '''  # TODO
         gamestate = GameState.load(filepath)
         env = cls()
         env.set_state(gamestate)
@@ -65,8 +100,8 @@ class ChessEnv:
         else:
             return obs, reward, game_over!=None, None
 
-    def set_state(self, gamestate:"GameState", opponent=None):
-        ''' Set the game to a specified gamestate '''
+    def set_state(self, checkpoint):
+        ''' Set the game to a specified gamestate '''  # TODO
         self.game = Game.load(gamestate)
         self.opponent = opponent
 
@@ -87,7 +122,7 @@ class ChessEnv:
         ''' Saves a GameState file at filepath. Returns GameState if filepath is not provided. '''
         gamestate = GameState(self.game)
         if filename:
-            gamestate.save(filename, folder)
+            gamestate.save(filename, folder)  # TODO
         else:
             return gamestate
 

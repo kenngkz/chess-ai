@@ -36,7 +36,7 @@ class GameState:
         ''' Save as a json file '''
         data = {name:val for name, val in self.__dict__.values()}
         filename += ".json"
-        filepath = utils.path_join(filename, folder)
+        filepath = utils.path_join(folder, filename)
         with open(filepath, "w") as f:
             f.write(data)
 
