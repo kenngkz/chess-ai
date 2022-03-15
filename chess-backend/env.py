@@ -12,17 +12,21 @@ class ChessEnv:
     '''
     Chess-v0
 
-    observation structure: list of len 70
+    observation structure: list of len 71
+        - 1 entry specifying the player to move: 1 for white and -1 for black
         - 64 entries specifying the piece index in each cell (order: row1col1, row1col2, ...)
         - 4 entries specifying the castle status (whether castling is allowed for each castle type)
             - order: black queenside, black queenside, white queenside, white kingside
         - 2 entries specifying whether each side is under check (order: white, black)
+
+    Note: initialization arg white and black not used.
     '''
 
     def __init__(self, white=None, black=None):
         ''' Initialization. player=1 if human player is white, -1 if black. player not required if opponent=None '''
         self.game = None
         self.done = True
+        self.last_reward = None
         # built-in opponents
         built_in_opp = {"random":RandomAgent}
         self.players = {}
@@ -51,7 +55,8 @@ class ChessEnv:
         self.game.all_legal_moves()
         self.action_space = self.game.legal_moves[self.game.player_to_move]
         self.done = False
-        return tuple([*self.game.board.to_arr().flatten(), *list(self.game.castle_status.values()), *self.game.check_status.values()])
+        self.last_reward = None
+        return tuple([self.game.player_to_move, *self.game.board.to_arr().flatten(), *list(self.game.castle_status.values()), *self.game.check_status.values()])
 
     def step(self, action):
         ''' Take a single action in the environment '''
@@ -60,14 +65,12 @@ class ChessEnv:
         self.game.make_move(action, permanent=True)
         self.game.all_legal_moves()
         self.action_space = self.game.legal_moves[self.game.player_to_move]
-        obs = tuple([*self.game.board.to_arr().flatten(), *list(self.game.castle_status.values()), *self.game.check_status.values()])
+        obs = tuple([self.game.player_to_move, *self.game.board.to_arr().flatten(), *list(self.game.castle_status.values()), *self.game.check_status.values()])
         game_over = self.game.game_over()
         self.done = game_over != None
         reward = 0 if game_over==None else 0.5*(self.game.player_to_move*game_over+1)
-        if self.players[self.game.player_to_move] != None and not self.done:
-            return self.step_player()
-        else:
-            return obs, reward, self.done, None
+        self.last_reward = reward
+        return obs, reward, self.done, None
 
     def set_state(self, gamestate:"GameState"):
         ''' Set the game to a specified gamestate '''
@@ -97,11 +100,6 @@ class ChessEnv:
         ''' Saves a GameState file at filepath. Returns GameState if filepath is not provided. '''
         gamestate = GameState(self.game)
         gamestate.save(filename, folder)
-
-    def step_player(self):
-        ''' Get the player to select a move and executes it. Must an object that inherits from Agent.'''
-        action = self.players[self.game.player_to_move].pred(self.action_space)
-        return self.step(action)
 
     def sample_action(self):
         return random.choice(self.action_space)

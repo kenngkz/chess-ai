@@ -4,7 +4,8 @@ from math import log
 class MCTSNode:
     ''' Store Q-values and actions in a tree '''
 
-    def __init__(self, action, exploration_parameter, parent=None):
+    def __init__(self, player, action, exploration_parameter, parent=None):
+        self.player = player  # 1 for reward maximising player and -1 for reward minimizing player
         self.action = action
         self.exploration_parameter = exploration_parameter
         self.parent = parent
@@ -13,7 +14,7 @@ class MCTSNode:
 
     def add_children(self, action_space):
         for action in action_space:
-            child = MCTSNode(action, self.exploration_parameter, self)
+            child = MCTSNode(-self.player, action, self.exploration_parameter, self)
             self.children.append(child)
 
     def update_score(self, reward):

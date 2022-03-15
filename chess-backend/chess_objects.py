@@ -111,6 +111,13 @@ class Board:
         if isinstance(piece, King):
             self.king_position[piece.side] = final_cell
 
+    def promote_piece(self, start_cell, final_cell, promo):
+        ''' Move and promote a pawn from given start_cell to final_cell '''
+        self.move_piece(start_cell, final_cell)
+        old_piece = self.occupant(final_cell)
+        new_piece = self.index_piece_mapping[promo](old_piece.side, old_piece.cell)
+        self.position[old_piece.cell] = new_piece
+
     # Miscellaneous functions
 
     def _position_add_pieces(self, position:dict) -> dict:
@@ -240,13 +247,14 @@ class Pawn(Piece):
                 yield candidate_cell
         if include_forward:
             candidate_cell = self.cell + self.move_range[0]
-            if board.occupant(candidate_cell) is EmptyCell:
-                yield candidate_cell
-                jump_allowed = self.cell//10==8 if self.side == 1 else self.cell//10==3
-                candidate_cell = self.cell + self.move_range[1]
-                if jump_allowed:  # if pawn is in starting row
-                    if board.occupant(candidate_cell) is EmptyCell:
-                        yield candidate_cell
+            if board.valid_cell(candidate_cell):
+                if board.occupant(candidate_cell) is EmptyCell:
+                    yield candidate_cell
+                    jump_allowed = self.cell//10==8 if self.side == 1 else self.cell//10==3
+                    candidate_cell = self.cell + self.move_range[1]
+                    if jump_allowed:  # if pawn is in starting row
+                        if board.occupant(candidate_cell) is EmptyCell:
+                            yield candidate_cell
 
     def candidate_move_cell(self, board:"Board"):
         # forward move cells

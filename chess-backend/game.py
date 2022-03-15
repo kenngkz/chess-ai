@@ -138,7 +138,7 @@ class Game:
                         if self._check_move_legality(move):
                             promo_allowed = piece.cell//10==3 if piece.side == 1 else piece.cell//10==8
                             if promo_allowed: # handle promotion -> limit to queen and knight promotions
-                                legal_moves += [Move(piece.side, piece.cell, cell, 0, 2), Move(piece.side, piece.cell, cell, 0, 5)]
+                                legal_moves[piece.side] += [Move(piece.side, piece.cell, cell, 0, 2), Move(piece.side, piece.cell, cell, 0, 5)]
                             else:
                                 legal_moves[piece.side].append(move)
 
@@ -184,9 +184,11 @@ class Game:
             king_cells, rook_cells = move.castle_move_cells
             new_board.move_piece(*king_cells)
             new_board.move_piece(*rook_cells)
+        elif move.promo:
+            new_board.promote_piece(move.start, move.final, move.promo)
         else:
             new_board.move_piece(move.start, move.final)
-        
+
         if permanent:
             self.board = new_board
             self.player_to_move *= -1
