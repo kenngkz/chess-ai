@@ -56,7 +56,13 @@ class ChessEnv:
         self.action_space = self.game.legal_moves[self.game.player_to_move]
         self.done = False
         self.last_reward = None
-        return tuple([self.game.player_to_move, *self.game.board.to_arr().flatten(), *list(self.game.castle_status.values()), *self.game.check_status.values()])
+        return self._get_obs()
+
+    def _get_obs(self):
+        ''' Return observation for current state '''
+        castle_status = [int(val) for val in self.game.castle_status_tuple()]
+        check_status = [int(self.game.check_status[key]) for key in [1, -1]]
+        return tuple([self.game.player_to_move, *self.game.board.to_arr().flatten(), *castle_status, *check_status])
 
     def step(self, action):
         ''' Take a single action in the environment '''
@@ -65,7 +71,7 @@ class ChessEnv:
         self.game.make_move(action, permanent=True)
         self.game.all_legal_moves()
         self.action_space = self.game.legal_moves[self.game.player_to_move]
-        obs = tuple([self.game.player_to_move, *self.game.board.to_arr().flatten(), *list(self.game.castle_status.values()), *self.game.check_status.values()])
+        obs = self._get_obs()
         game_over = self.game.game_over()
         self.done = game_over != None
         reward = 0 if game_over==None else 0.5*(self.game.player_to_move*game_over+1)

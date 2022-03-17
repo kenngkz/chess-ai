@@ -68,3 +68,25 @@ def print_move(move:"Move", board:"Board"):
     else:
         movement = f'{board.occupant(move.start).name} -> {board.occupant_name(move.final).name}'
     print(init_params, movement)
+
+##########################
+###    Optimization    ###
+##########################
+
+def dict_to_tuple(dic) -> tuple:
+    ''' Converts dict board position to tuple representation '''
+    tup = (0 for _ in len(64))
+    for cell, val in dic.items():
+        tup[constants.cell_mapping[cell]] = val
+    return tup
+
+def enhash_cell(padCell:int) -> int:
+    ''' Converts padCell number (21-98) to hashCell (0-63) '''
+    return constants.padCell_hashCell_mapping[padCell]
+
+def dehash_cell(hashCell:int) -> int:
+    ''' Converts hashCell (0-63) to padCell (21-98) '''
+    return constants.hashCell_padCell_mapping[hashCell]
+
+def pad_to_usercell(padCell:int) -> str:
+    return constants.padCell_userCell_mapping[padCell]

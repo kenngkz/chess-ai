@@ -222,7 +222,7 @@ class Slider(Piece):
                 if board.valid_cell(new_cell):
                     yield new_cell
                     occupant = board.occupant(new_cell)
-                    if not occupant is EmptyCell:
+                    if not isinstance(occupant, EmptyCell):
                         break
                 else:
                     break
@@ -248,23 +248,23 @@ class Pawn(Piece):
         if include_forward:
             candidate_cell = self.cell + self.move_range[0]
             if board.valid_cell(candidate_cell):
-                if board.occupant(candidate_cell) is EmptyCell:
+                if isinstance(board.occupant(candidate_cell), EmptyCell):
                     yield candidate_cell
                     jump_allowed = self.cell//10==8 if self.side == 1 else self.cell//10==3
                     candidate_cell = self.cell + self.move_range[1]
                     if jump_allowed:  # if pawn is in starting row
-                        if board.occupant(candidate_cell) is EmptyCell:
+                        if isinstance(board.occupant(candidate_cell), EmptyCell):
                             yield candidate_cell
 
     def candidate_move_cell(self, board:"Board"):
         # forward move cells
         candidate_cell = self.cell + self.move_range[0]
-        if board.occupant(candidate_cell) is EmptyCell:
+        if isinstance(board.occupant(candidate_cell), EmptyCell):
             yield candidate_cell, False  # 2nd output indicates whether or not to include in threat_map
             jump_allowed = self.cell//10==8 if self.side == 1 else self.cell//10==3
             candidate_cell = self.cell + self.move_range[1]
             if jump_allowed:  # if pawn is in starting row
-                if board.occupant(candidate_cell) is EmptyCell:
+                if isinstance(board.occupant(candidate_cell), EmptyCell):
                     yield candidate_cell, False
         # capture move cells
         candidate_cells = [self.cell+self.move_range[2], self.cell+self.move_range[3]]

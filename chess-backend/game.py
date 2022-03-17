@@ -2,20 +2,22 @@
 Manages and runs the chess game.
 '''
 
-from chess_objects import Board, Move, Pawn, EmptyCell, King, Rook
+from chess_objects2 import Board, Move, Pawn, EmptyCell, King, Rook
 import utils
+import constants
 
-from copy import deepcopy
+from copy import copy
 
 class GameState:
 
-    def __init__(self, game_obj:"Game"):
-        self.position = deepcopy(game_obj.board.to_dict())  # dict is mutable
+    def __init__(self, game_obj:"Game", include_history=False):
+        self.hashboard = game_obj.board.enhash()
         self.player_to_move = game_obj.player_to_move
         self.move_counter = game_obj.move_counter
-        self.move_history = deepcopy(game_obj.move_history)  # list is mutable
         self.stalemate_counter = game_obj.stalemate_counter
-        self.castle_status = game_obj.castle_status
+        self.castle_status = game_obj.castle_status_tuple()
+        if include_history:
+            self.move_history = copy(game_obj.move_history)  # list is mutable
 
     @classmethod
     def load(cls, state_source):
@@ -48,7 +50,7 @@ class Game:
     castling_occupant_free = {-1:{-5:[22, 23, 24], -6:[26, 27]}, 1:{5:[92, 93, 94], 6:[96, 97]}}
 
     def __init__(self):
-        self.board = Board()
+        self.board = Board(constants.initial_board_position)
         self.player_to_move = 1
         self.move_counter = 0
         self.move_history = []
@@ -72,6 +74,7 @@ class Game:
                 data = eval(f.read())
             for name, val in data.values():
                 blank_game.__dict__[name] = val
+        blank_game.castle_status = {key:val for key, val in zip([-5, -6, 5, 6], blank_game.castle_status)}
         return blank_game
 
     # Game state functions
@@ -114,6 +117,9 @@ class Game:
     def get_state(self):
         return GameState(self)
 
+    def castle_status_tuple(self):
+        return tuple([self.castle_status[key] for key in [-5, -6, 5, 6]])
+
     # Legal moves functions
 
     def all_legal_moves(self):
@@ -121,7 +127,9 @@ class Game:
         legal_moves = {-1:[], 1:[]}
         threat_map = {-1:[], 1:[]}
         for piece in self.board.position.values():
-            if isinstance(piece, Pawn):
+            if isinstance(piece, EmptyCell):
+                continue
+            elif isinstance(piece, Pawn):
                 for cell, is_threat in piece.candidate_move_cell(self.board):
                     move = None
                     if is_threat:  # then it is a capture move cell
@@ -131,7 +139,7 @@ class Game:
                         if self.board.occupant(cell).side == -piece.side:  # then it is prelegal move
                             move = Move(piece.side, piece.cell, cell)
                     else:  # then it is a forward move cell
-                        if self.board.occupant(cell) == EmptyCell:  # then it is prelegal move
+                        if isinstance(self.board.occupant(cell), EmptyCell):  # then it is prelegal move
                             move = Move(piece.side, piece.cell, cell)
 
                     if move:  # if prelegal move, check move legality
@@ -185,9 +193,9 @@ class Game:
             new_board.move_piece(*king_cells)
             new_board.move_piece(*rook_cells)
         elif move.promo:
-            new_board.promote_piece(move.start, move.final, move.promo)
+            new_board.promote_piece(move.start, move.end, move.promo)
         else:
-            new_board.move_piece(move.start, move.final)
+            new_board.move_piece(move.start, move.end)
 
         if permanent:
             self.board = new_board
