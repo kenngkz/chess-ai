@@ -2,7 +2,7 @@
 Manages and runs the chess game.
 '''
 
-from chess_objects2 import Board, Move, Pawn, EmptyCell, King, Rook
+from chess_objects import Board, Move, Pawn, EmptyCell, King, Rook
 import utils
 import constants
 
