@@ -104,16 +104,16 @@ class Game:
             self.check_status[side] = self._run_check(side, self.board)
         return self.check_status[side]
 
-    def _run_check(self, side, board:"Board"):  # used for checking move legality
+    def _run_check(self, side):  # used for checking move legality
         ''' 
         Runs through threat_map for the opposing side. 
         Returns True if the given side is under check, False otherwise. 
         Requires board to be passed
         '''
-        for piece in board.position.values():
+        for piece in self.board.position.values():
             if piece[0] == -side:
-                for cell, _ in piece_threat_map(piece, board):
-                    if board.king_position[side] == cell:
+                for cell, _ in piece_threat_map(piece, self.board):
+                    if self.board.king_position[side] == cell:
                         return True
         return False
 
@@ -178,29 +178,31 @@ class Game:
 
     def _check_move_legality(self, move:"Move"):
         ''' Checks whether a move is legal by making a move on a Board copy and checking if it places the King under check '''
-        new_board = self.make_move(move, permanent=False)
-        return not self._run_check(move.side, new_board)
+        self.make_move(move, permanent=False)
+        islegal = not self._run_check(move.side)
+        self.undo_move()
+        return islegal
 
     # Make Move functions (change some attribute of Game object)
 
     def make_move(self, move:"Move", permanent=True):
-        ''' Executes a move on current board. permanent=False to return new_board instead of updating current board '''
-        new_board = self.board.copy()
-        piece = new_board.occupant(move.start)
-        n_pieces = len(new_board.position)
+        ''' Executes a move on current board. permanent=False to return undo Moves '''
+        piece = self.board.occupant(move.start)
+        n_pieces = len(self.board.position)
         if move.castle_type:
             king_cells, rook_cells = move.castle_move_cells
-            new_board.move_piece(*king_cells)
-            new_board.move_piece(*rook_cells)
+            piece1_info, cap_piece1_info = self.board.move_piece(*king_cells)
+            piece2_info, cap_piece2_info = self.board.move_piece(*rook_cells)
+            self.last_move = ((*piece1_info, *cap_piece1_info), (*piece2_info, *cap_piece2_info))
         else:
-            new_board.move_piece(move.start, move.end, move.promo)
+            piece_info, cap_piece_info = self.board.move_piece(move.start, move.end, move.promo)
+            self.last_move = (*piece_info, *cap_piece_info)
 
         if permanent:
             self.last_hashboard = self.board.enhash()
             piece_side, piece_index, piece_cell, *_ = piece
-            self.board = new_board
             self.player_to_move *= -1
-            if piece_index == 1 or n_pieces > len(new_board.position):
+            if piece_index == 1 or n_pieces > len(self.board.position):
                 self.stalemate_counter = 0
             else:
                 self.stalemate_counter += 1
@@ -218,5 +220,10 @@ class Game:
                         castle_status.append(castle_type)
             self.castle_status = castle_status
             self.check_status = {-1:None, 1:None}
-        else:
-            return new_board
+
+    def undo_move(self):
+        if len(self.last_move) == 2:  # castle move
+            for args in self.last_move:
+                self.board.undo_move(*args)
+        else: # normal move or promotion
+            self.board.undo_move(*self.last_move)

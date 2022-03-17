@@ -38,7 +38,7 @@ class Board:
 
     ## Initialization
 
-    def __init__(self, board_data:Union[int, dict, np.array]) -> None:
+    def __init__(self, board_data:Union[tuple, dict, np.array]) -> None:
         if isinstance(board_data, tuple):
             self._dehash(board_data)
         else:
@@ -74,13 +74,22 @@ class Board:
 
     def move_piece(self, start_padCell, end_padCell, promo=0):
         ''' Moves a piece from given start_padCell to the final_cell '''
-        piece = self.position.pop(start_padCell)
+        piece = self.occupant(start_padCell)
+        captured_piece = self.occupant(end_padCell)
         start_piece, end_piece = move_piece(piece, end_padCell, promo)
         self.position[end_padCell] = end_piece
         self.position[start_padCell] = start_piece
         
         if piece[1] == 6:
             self.king_position[piece[0]] = end_padCell
+
+        return (start_padCell, piece), (end_padCell, captured_piece)
+
+    def undo_move(self, start_padCell, piece, end_padCell, captured_piece):
+        if piece[1] == 6:
+            self.king_position[piece[0]] = start_padCell
+        self.position[start_padCell] = piece
+        self.position[end_padCell] = captured_piece
 
     ## Get information about Board
 
@@ -174,7 +183,8 @@ Piece = (side, piece_type, piece_padCell, move_range)
 ## Piece factory
 def createPiece(piece_index, padCell):
     ''' Piece factory to create pieces '''
-    return (utils.sign(piece_index), abs(piece_index), padCell, constants.piece_index_move_range_mapping[piece_index],)
+    return constants.piece_mapping[(padCell, piece_index)]
+    return (utils.sign(piece_index), abs(piece_index), padCell, constants.piece_index_move_range_mapping[piece_index])
 
 ## Threat map functions
 def pawn_threat_map(side:int, padCell:int, move_range:tuple, board:"Board", include_forward):
@@ -228,7 +238,9 @@ def piece_threat_map(piece, board, include_forward=False):
 
 ## Move piece function
 def move_piece(piece, new_padCell, new_index):
+    ''' Return EmptyCell and new piece with new_padCell and new_index '''
     side, index, padCell, move_range = piece
     if new_index != 0:
-        index = new_index
-    return (0, 0, padCell, constants.piece_index_move_range_mapping[0]), (side, index, new_padCell, move_range)
+        return constants.piece_mapping[(padCell, 0)], constants.piece_mapping[(new_padCell, new_index)]
+    else:
+        return constants.piece_mapping[(padCell, 0)], (side, index, new_padCell, move_range)
