@@ -28,6 +28,14 @@ padCell_userCell_mapping = {21: 'a1', 22: 'b1', 23: 'c1', 24: 'd1', 25: 'e1', 26
 
 # movement range for pawns (without considering other pieces or cell validity)
 pawn_move_range = {1:[-10, -20, -11, -9], -1:[10, 20, 11, 9]}
+piece_index_move_range_mapping = {0:(), -1:(10, 20, 11, 9), 1:(-10, -20, -11, -9), -2:(-12, -21, -19, -8, 12, 21, 19, 8), 2:(-12, -21, -19, -8, 12, 21, 19, 8), -3:(-11, -9, 11, 9), 3:(-11, -9, 11, 9), -4:(-1, -10, 1, 10), 4:(-1, -10, 1, 10), -5:(-1, -11, -10, -9, 1, 11, 10, 9), 5:(-1, -11, -10, -9, 1, 11, 10, 9), -6:(-1, -11, -10, -9, 1, 11, 10, 9), 6:(-1, -11, -10, -9, 1, 11, 10, 9)}
+
+# piece symbols
+piece_index_symbol_mapping = {0:"-", -1:"p", 1:"P", -2:"n", 2:"N", -3:"b", 3:"B", -4:"r", 4:"R", -5:"q", 5:"Q", -6:"k", 6:"K"}
+symbol_piece_index_mapping = {'-': 0, 'p': -1, 'P': 1, 'n': -2, 'N': 2, 'b': -3, 'B': 3, 'r': -4, 'R': 4, 'q': -5, 'Q': 5, 'k': -6, 'K': 6}
+
+# piece names
+piece_index_name_mapping = {0: 'Empty cell', -1: 'Black pawn', 1: 'White pawn', -2: 'Black knight', 2: 'White knight', -3: 'Black bishop', 3: 'White bishop', -4: 'Black rook', 4: 'White rook', -5: 'Black queen', 5: 'White queen', -6: 'Black king', 6: 'White king'}
 
 ######################
 ###    Castling    ###

@@ -45,47 +45,45 @@ class Board:
             if isinstance(board_data, np.ndarray):
                 board_data = utils.arr_to_dict(board_data)
             elif isinstance(list(board_data.values())[0], str):
-                symbol_index_mapping = {piece_class.symbol:-class_index for class_index, piece_class in self.index_piece_mapping.values()}
-                for class_index, piece_class in self.index_piece_mapping.values():
-                    symbol_index_mapping[piece_class.symbol.upper()] = class_index
-                board_data = {cell:symbol_index_mapping[symbol] for cell, symbol in board_data.values()}
-            # self.position = {padCell:createPiece(piece_index, padCell) for padCell, piece_index in board_data.items()}
-            self.position = {padCell:createPiece(board_data.get(padCell, 0), padCell)for padCell in constants.valid_padCells}
-        self._get_king_position()
-        self.index_piece_mapping = {}
+                board_data = {cell:constants.symbol_piece_index_mapping[symbol] for cell, symbol in board_data.values()}
+            self.position = {}
+            self.king_position = {-1:None, 1:None}
+            for padCell in constants.valid_padCells:
+                piece = createPiece(board_data.get(padCell, 0), padCell)
+                if piece[1] == 6:
+                    self.king_position[piece[0]] = padCell
+                self.position[padCell] = piece
 
     def enhash(self) -> int:
         ''' Returns a hashBoard representing the board position and castle status '''
         hashBoard = 0
         for padCell, piece in self.position.items():
-            hashBoard += constants.hashCell_param_mapping[constants.padCell_hashCell_mapping[padCell]] * (piece.index + 6)
+            hashBoard += constants.hashCell_param_mapping[constants.padCell_hashCell_mapping[padCell]] * (piece[0]*piece[1] + 6)
         return hashBoard
 
     def _dehash(self, hashBoard):
         ''' Parses a hashBoard and sets relevant attributes of Board obj according to data in hashBoard '''
         self.position = {}
+        self.king_position = {-1:None, 1:None}
         for hashCell in range(64):
             piece_index = hashBoard//constants.hashCell_param_mapping[hashCell]%hash_size - 6
             padCell = utils.dehash_cell(hashCell)
-            self.position[padCell] = createPiece(piece_index, padCell)
+            piece = createPiece(piece_index, padCell)
+            if piece[1] == 6:
+                self.king_position[piece[0]] = padCell
+            self.position[padCell] = piece
 
     ## Execute movement on Board
 
-    def move_piece(self, start_padCell, end_padCell):
+    def move_piece(self, start_padCell, end_padCell, promo=0):
         ''' Moves a piece from given start_padCell to the final_cell '''
-        piece = self.position.pop(start_padCell)  # raises KeyError if no piece exists in start_cell
-        self.position[end_padCell] = piece
-        self.position[start_padCell] = EmptyCell(0, start_padCell)
-        piece.move_cell(end_padCell)
-        if isinstance(piece, King):
-            self.king_position[piece.side] = end_padCell
-
-    def promote_piece(self, start_padCell, end_padCell, promo):
-        ''' Move and promote a pawn from given start_cell to final_cell '''
-        self.move_piece(start_padCell, end_padCell)
-        old_piece = self.occupant(end_padCell)
-        new_piece = createPiece(promo*old_piece.side, end_padCell)
-        self.position[old_piece.cell] = new_piece
+        piece = self.position.pop(start_padCell)
+        start_piece, end_piece = move_piece(piece, end_padCell, promo)
+        self.position[end_padCell] = end_piece
+        self.position[start_padCell] = start_piece
+        
+        if piece[1] == 6:
+            self.king_position[piece[0]] = end_padCell
 
     ## Get information about Board
 
@@ -95,13 +93,6 @@ class Board:
     def occupant(self, padCell) -> "Piece":
         return self.position[padCell]
 
-    def _get_king_position(self):
-        ''' Saves as self.king_position the positions of the 2 kings '''
-        self.king_position = {}
-        for cell, piece in self.position.items():
-            if isinstance(piece, King):
-                self.king_position[piece.side] = cell
-
     ## Miscellaneous
 
     def __repr__(self):
@@ -109,14 +100,15 @@ class Board:
         for row in range(8):
             row_str = str(row+1) + " | "
             for col in range(8):
-                row_str += f" {self.occupant(21 + 10*row + col).symbol} "
+                side, index, _, _ = self.occupant(21 + 10*row + col)
+                row_str += f" {constants.piece_index_symbol_mapping[side*index]} "
             out += row_str + "|\n"
         out += "  +-------------------------+\n"
         return out
 
     def to_dict(self):
         ''' Retuns a dict representation of the Board position '''
-        return {cell:piece.class_index*piece.side for cell, piece in self.position.items()}
+        return {cell:side*index for cell, (side, index, _, _) in self.position.items()}
 
     def to_arr(self):
         ''' Returns an array representation of the Board position '''
@@ -342,11 +334,71 @@ class EmptyCell:
     def __init__(self, index, padCell):
         pass
 
-###########################
-###    Piece Factory    ###
-###########################
+####################
+###    Pieces    ###
+####################
 
-class_index_piece_mapping = {piece.class_index:piece for piece in [EmptyCell, Pawn, Knight, Bishop, Rook, Queen, King]}
+'''
+Piece = (side, piece_type, piece_padCell, move_range)
+'''
+
+## Piece factory
 def createPiece(piece_index, padCell):
-    class_index_piece_mapping = {piece.class_index:piece for piece in [EmptyCell, Pawn, Knight, Bishop, Rook, Queen, King]}
-    return class_index_piece_mapping[abs(piece_index)](utils.sign(piece_index), padCell)
+    ''' Piece factory to create pieces '''
+    return (utils.sign(piece_index), abs(piece_index), padCell, constants.piece_index_move_range_mapping[piece_index],)
+
+## Threat map functions
+def pawn_threat_map(side:int, padCell:int, move_range:tuple, board:"Board"):
+    ''' Generate threat map for pawn '''
+    # forward move cells
+    candidate_padCell = padCell + move_range[0]
+    if board.occupant(candidate_padCell)[0] == 0:
+        yield candidate_padCell, False  # 2nd output indicates whether or not to include in threat_map
+        jump_allowed = padCell//10==8 if side == 1 else padCell//10==3
+        candidate_padCell = padCell + move_range[1]
+        if jump_allowed:  # if pawn is in starting row
+            if isinstance(board.occupant(candidate_padCell), EmptyCell):
+                yield candidate_padCell, False
+    # capture move cells
+    candidate_padCells = [padCell+move_range[2], padCell+move_range[3]]
+    for candidate_padCell in candidate_padCells:
+        if board.valid_cell(candidate_padCell):
+            yield candidate_padCell, True
+
+def leaper_threat_map(side:int, padCell:int, move_range:tuple, board:"Board"):
+    ''' Generate threat map for leaper '''
+    for direction in move_range:
+        new_padCell = padCell + direction
+        if board.valid_cell(new_padCell):
+            yield new_padCell, None
+
+def slider_threat_map(side:int, padCell:int, move_range:tuple, board:"Board"):
+    ''' Generate threat map for slider '''
+    for direction in move_range:
+        for offset_magnitude in range(1, 8):
+            new_padCell = padCell + direction * offset_magnitude
+            if board.valid_cell(new_padCell):
+                yield new_padCell, None
+                if board.occupant(new_padCell)[0] != 0:
+                    break
+            else:
+                break
+
+def dummy(*args):
+    ''' Generate threat map for empty cell '''
+    return ()
+
+threat_map_func_mapping = {0:dummy, 1:pawn_threat_map, 2:leaper_threat_map, 3:slider_threat_map, 4:slider_threat_map, 5:slider_threat_map, 6:leaper_threat_map}
+def piece_threat_map(piece, board):
+    ''' Generate threat map for a given piece '''
+    side, piece_index, piece_padCell, move_range = piece
+    threat_map_func = threat_map_func_mapping[piece_index]
+    for padCell in threat_map_func(side, piece_padCell, move_range, board):
+        yield padCell
+
+## Move piece function
+def move_piece(piece, new_padCell, new_index):
+    side, index, padCell, move_range = piece
+    if new_index != 0:
+        index = new_index
+    return (0, 0, padCell, constants.piece_index_move_range_mapping[0]), (side, index, new_padCell, move_range)
