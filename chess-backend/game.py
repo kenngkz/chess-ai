@@ -50,7 +50,7 @@ class Game:
     castling_occupant_free = {-1:{-5:[22, 23, 24], -6:[26, 27]}, 1:{5:[92, 93, 94], 6:[96, 97]}}
 
     def __init__(self):
-        self.board = Board(constants.initial_hashboard)
+        self.board = Board(constants.initial_hashBoard)
         self.player_to_move = 1
         self.move_counter = 0
         self.move_history = []
@@ -112,7 +112,7 @@ class Game:
         '''
         for piece in board.position.values():
             if piece[0] == -side:
-                for cell in piece_threat_map(piece, self.board):
+                for cell, _ in piece_threat_map(piece, board):
                     if board.king_position[side] == cell:
                         return True
         return False
@@ -134,7 +134,7 @@ class Game:
             if piece_index == 0:
                 continue
             elif piece_index == 1:
-                for cell, is_threat in piece_threat_map(piece, self.board):
+                for cell, is_threat in piece_threat_map(piece, self.board, True):
                     move = None
                     if is_threat:  # then it is a capture move cell
                         threat_map[-piece_side].append(cell)
@@ -176,18 +176,6 @@ class Game:
                 if sum(cell in threat_map[side] for cell in self.castling_threat_free[side][castle_type]) == 0:
                     self.legal_moves[side].append(Move(side, self.board.king_position[side], 0, castle_type, 0))
 
-        # for side in [-1, 1]:
-        #     if self.check_status[side] == None:
-        #         self.check_status[side] = False
-        #     if not self.check_status[side]:
-        #         for castle_type in self.castling_occupant_free[side]:
-        #             if self.castle_status[castle_type]:
-        #                 # check occupant free cells -> cells must not be occupied to perform castling
-        #                 if sum(self.board.occupant(cell)[0]!=0 for cell in self.castling_occupant_free[side][castle_type]) == 0:
-        #                     # check threat free cells -> cells must not be threatened to perform castling
-        #                     if sum(cell in threat_map[side] for cell in self.castling_threat_free[side][castle_type]) == 0:
-        #                         self.legal_moves[side].append(Move(side, self.board.king_position[side], 0, castle_type, 0))
-
     def _check_move_legality(self, move:"Move"):
         ''' Checks whether a move is legal by making a move on a Board copy and checking if it places the King under check '''
         new_board = self.make_move(move, permanent=False)
@@ -208,7 +196,8 @@ class Game:
             new_board.move_piece(move.start, move.end, move.promo)
 
         if permanent:
-            piece_side, piece_index, piece_cell,  *_ = piece
+            self.last_hashboard = self.board.enhash()
+            piece_side, piece_index, piece_cell, *_ = piece
             self.board = new_board
             self.player_to_move *= -1
             if piece_index == 1 or n_pieces > len(new_board.position):
@@ -217,13 +206,17 @@ class Game:
                 self.stalemate_counter += 1
             self.move_counter += 1
             self.move_history.append(move.to_tuple())
+            castle_status = []
             for castle_type in self.castle_status:
                 castle_type_side = utils.sign(castle_type)
-                if castle_type_side == piece_side:
-                    if piece_index == 6:
-                        self.castle_status.remove(castle_type)
-                    elif piece_index == castle_type:
-                        self.castle_status.remove(castle_type)
+                if castle_type_side != piece_side:
+                    castle_status.append(castle_type)
+                else:
+                    if piece_index != 5 and piece_index != 6:
+                        castle_status.append(castle_type)
+                    if piece_index == 5 and not ((piece_cell%10==1 and castle_type==6) or(piece_cell%10==8 and castle_type==5)):
+                        castle_status.append(castle_type)
+            self.castle_status = castle_status
             self.check_status = {-1:None, 1:None}
         else:
             return new_board

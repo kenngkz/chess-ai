@@ -39,7 +39,7 @@ class Board:
     ## Initialization
 
     def __init__(self, board_data:Union[int, dict, np.array]) -> None:
-        if isinstance(board_data, int):
+        if isinstance(board_data, tuple):
             self._dehash(board_data)
         else:
             if isinstance(board_data, np.ndarray):
@@ -56,17 +56,14 @@ class Board:
 
     def enhash(self) -> int:
         ''' Returns a hashBoard representing the board position and castle status '''
-        hashBoard = 0
-        for padCell, piece in self.position.items():
-            hashBoard += constants.hashCell_param_mapping[constants.padCell_hashCell_mapping[padCell]] * (piece[0]*piece[1] + 6)
-        return hashBoard
+        pieces = (self.position[utils.dehash_cell(hashCell)] for hashCell in range(64))
+        return tuple(piece[0]*piece[1] for piece in pieces)
 
     def _dehash(self, hashBoard):
         ''' Parses a hashBoard and sets relevant attributes of Board obj according to data in hashBoard '''
         self.position = {}
         self.king_position = {-1:None, 1:None}
-        for hashCell in range(64):
-            piece_index = hashBoard//constants.hashCell_param_mapping[hashCell]%hash_size - 6
+        for hashCell, piece_index in enumerate(hashBoard):
             padCell = utils.dehash_cell(hashCell)
             piece = createPiece(piece_index, padCell)
             if piece[1] == 6:
@@ -90,7 +87,7 @@ class Board:
     def valid_cell(self, padCell) -> bool:
         return padCell in constants.valid_padCells
 
-    def occupant(self, padCell) -> "Piece":
+    def occupant(self, padCell) -> tuple:
         return self.position[padCell]
 
     ## Miscellaneous
@@ -141,11 +138,15 @@ class Move:
         self.castle_type = castle_type
         self.castle_move_cells = self.castle_move_cells_mapping[castle_type]
         self.promo = promo
-
+        
     def __repr__(self) -> str:
         ''' Print Move with initialization parameters '''
-        return f'Move({self.side}, {utils.pad_to_usercell(self.start)}, {utils.pad_to_usercell(self.end)}, {self.castle_type}, {self.promo})'
-        # return f"Move({self.side}, {self.start}, {self.end}, {self.castle_type}, {self.promo})"
+        outstr = f'Move({self.side}, {utils.pad_to_usercell(self.start)}, {utils.pad_to_usercell(self.end)}, {self.castle_type}, {self.promo})'
+        if self.promo:
+            outstr += f" -> Pawn promotion to {constants.piece_index_name_mapping[self.promo]}"
+        elif self.castle_type:
+            outstr += f" -> {constants.castle_names[self.castle_type]} Castle"
+        return outstr
 
     def __hash__(self) -> int:  # to allow __eq__ to be defined
         return hash(self.to_tuple())
@@ -163,178 +164,6 @@ class Move:
         return (self.side, self.start, self.end, self.castle_type, self.promo)
 
 ####################
-###    PIECES    ###
-####################
-
-## Abstract classes
-
-class Piece(ABC):
-    '''
-    Abstract class used to build each Piece Type: Pawn, Knight, Bishop, Rook, Queen, King
-
-    All Pieces share the same move_cell() function to change their cell
-    '''
-    side_name_mapping = {1:"White", -1:"Black"}
-
-    def __init__(self, side, padCell):
-        self.side = side
-        self.cell = padCell
-        self.name = f"{self.side_name_mapping[side]} {self.class_name}"
-        self.symbol = self.class_symbol.upper() if self.side>0 else self.class_symbol
-        self.index = self.class_index*self.side
-
-    @abstractmethod
-    def threat_map_contribution(self, board:"Board", include_forward=False):
-        ''' Threat map contribution of a piece '''
-        pass
-
-    @property
-    @abstractmethod
-    def move_range(self):
-        ''' Movement range of a piece without considering other pieces or cell validity '''
-        pass
-
-    @property
-    @abstractmethod
-    def class_name(self):
-        ''' Name of the piece '''
-        pass
-
-    @property
-    @abstractmethod
-    def class_symbol(self):
-        ''' Symbol of the piece type '''
-        pass
-
-    @property
-    @abstractmethod
-    def class_index(self):
-        ''' Int index of the piece type '''
-        pass
-
-    def move_cell(self, new_padCell):
-        self.cell = new_padCell
-
-    def info(self):
-        return (f"Piece - Name: {self.name}, Cell: {self.cell}")
-
-class Leaper(Piece):
-    ''' Abstract subclass of Piece for Leaper pieces that have common function prelegal_moves() '''
-    def threat_map_contribution(self, board:"Board", include_forward=False):
-        ''' Yield threat map contribution by the Leaper Piece obj '''
-        for direction in self.move_range:
-            new_padCell = self.cell + direction
-            if board.valid_cell(new_padCell):
-                yield new_padCell
-
-class Slider(Piece):
-    ''' Abstract subclass of Piece for Slider pieces that have common function prelegal_moves() '''
-    def threat_map_contribution(self, board:"Board", include_forward=False):
-        ''' YIelds threat map contribution of a Slider Piece obj '''
-        for direction in self.move_range:
-            for offset_magnitude in range(1, 8):
-                new_padCell = self.cell + direction * offset_magnitude
-                if board.valid_cell(new_padCell):
-                    yield new_padCell
-                    occupant = board.occupant(new_padCell)
-                    if not occupant is EmptyCell:
-                        break
-                else:
-                    break
-
-## Piece Definitions
-
-class Pawn(Piece):
-
-    # movement range of pawns are dependent on the side. assign move_range when Pawn obj is initialized
-    move_range = None
-    class_name = "pawn"
-    class_symbol = "p"
-    class_index = 1
-
-    def __init__(self, side, padCell):
-        super().__init__(side, padCell)
-        self.move_range = constants.pawn_move_range[side]  # overload move_range for each Pawn depending on its side
-
-    def threat_map_contribution(self, board: "Board", include_forward=False):
-        ''' Yield threat map contribution cells of a Pawn object '''
-        candidate_padCells = [self.cell+self.move_range[2], self.cell+self.move_range[3]]
-        for candidate_padCell in candidate_padCells:
-            if board.valid_cell(candidate_padCell):
-                yield candidate_padCell
-        if include_forward:
-            candidate_padCell = self.cell + self.move_range[0]
-            if board.valid_cell(candidate_padCell):
-                if board.occupant(candidate_padCell) is EmptyCell:
-                    yield candidate_padCell
-                    jump_allowed = self.cell//10==8 if self.side == 1 else self.cell//10==3
-                    candidate_padCell = self.cell + self.move_range[1]
-                    if jump_allowed:  # if pawn is in starting row
-                        if board.occupant(candidate_padCell) is EmptyCell:
-                            yield candidate_padCell
-
-    def candidate_move_cell(self, board:"Board"):
-        # forward move cells
-        candidate_padCell = self.cell + self.move_range[0]
-        if isinstance(board.occupant(candidate_padCell), EmptyCell):
-            yield candidate_padCell, False  # 2nd output indicates whether or not to include in threat_map
-            jump_allowed = self.cell//10==8 if self.side == 1 else self.cell//10==3
-            candidate_padCell = self.cell + self.move_range[1]
-            if jump_allowed:  # if pawn is in starting row
-                if isinstance(board.occupant(candidate_padCell), EmptyCell):
-                    yield candidate_padCell, False
-        # capture move cells
-        candidate_padCells = [self.cell+self.move_range[2], self.cell+self.move_range[3]]
-        for candidate_padCell in candidate_padCells:
-            if board.valid_cell(candidate_padCell):
-                yield candidate_padCell, True
-        
-
-class Knight(Leaper):
-    move_range = [-12, -21, -19, -8, 12, 21, 19, 8]
-    class_name = "knight"
-    class_symbol = "n"
-    class_index = 2
-
-class Bishop(Slider):
-    move_range = [-11, -9, 11, 9]
-    class_name = "bishop"
-    class_symbol = "b"
-    class_index = 3
-
-class Rook(Slider):
-    move_range = [-1, -10, 1, 10]
-    class_name = "rook"
-    class_symbol = "r"
-    class_index = 4
-
-class Queen(Slider):
-    move_range = [-1, -11, -10, -9, 1, 11, 10, 9]
-    class_name = "queen"
-    class_symbol = "q"
-    class_index = 5
-
-class King(Leaper):
-    move_range = [-1, -11, -10, -9, 1, 11, 10, 9]
-    class_name = "king"
-    class_symbol = "k"
-    class_index = 6
-
-########################
-###    Empty Cell    ###
-########################
-
-class EmptyCell:
-    name = "Empty cell"
-    symbol = "-"
-    side = 0
-    class_index = 0
-    index = 0
-
-    def __init__(self, index, padCell):
-        pass
-
-####################
 ###    Pieces    ###
 ####################
 
@@ -348,31 +177,32 @@ def createPiece(piece_index, padCell):
     return (utils.sign(piece_index), abs(piece_index), padCell, constants.piece_index_move_range_mapping[piece_index],)
 
 ## Threat map functions
-def pawn_threat_map(side:int, padCell:int, move_range:tuple, board:"Board"):
+def pawn_threat_map(side:int, padCell:int, move_range:tuple, board:"Board", include_forward):
     ''' Generate threat map for pawn '''
-    # forward move cells
-    candidate_padCell = padCell + move_range[0]
-    if board.occupant(candidate_padCell)[0] == 0:
-        yield candidate_padCell, False  # 2nd output indicates whether or not to include in threat_map
-        jump_allowed = padCell//10==8 if side == 1 else padCell//10==3
-        candidate_padCell = padCell + move_range[1]
-        if jump_allowed:  # if pawn is in starting row
-            if isinstance(board.occupant(candidate_padCell), EmptyCell):
-                yield candidate_padCell, False
+    if include_forward:
+        # forward move cells
+        candidate_padCell = padCell + move_range[0]
+        if board.occupant(candidate_padCell)[0] == 0:
+            yield candidate_padCell, False  # 2nd output indicates whether or not to include in threat_map
+            jump_allowed = padCell//10==8 if side == 1 else padCell//10==3
+            if jump_allowed:  # if pawn is in starting row
+                candidate_padCell = padCell + move_range[1]
+                if board.occupant(candidate_padCell)[0] == 0:
+                    yield candidate_padCell, False
     # capture move cells
     candidate_padCells = [padCell+move_range[2], padCell+move_range[3]]
     for candidate_padCell in candidate_padCells:
         if board.valid_cell(candidate_padCell):
             yield candidate_padCell, True
 
-def leaper_threat_map(side:int, padCell:int, move_range:tuple, board:"Board"):
+def leaper_threat_map(side:int, padCell:int, move_range:tuple, board:"Board", include_forward):
     ''' Generate threat map for leaper '''
     for direction in move_range:
         new_padCell = padCell + direction
         if board.valid_cell(new_padCell):
             yield new_padCell, None
 
-def slider_threat_map(side:int, padCell:int, move_range:tuple, board:"Board"):
+def slider_threat_map(side:int, padCell:int, move_range:tuple, board:"Board", include_forward):
     ''' Generate threat map for slider '''
     for direction in move_range:
         for offset_magnitude in range(1, 8):
@@ -389,11 +219,11 @@ def dummy(*args):
     return ()
 
 threat_map_func_mapping = {0:dummy, 1:pawn_threat_map, 2:leaper_threat_map, 3:slider_threat_map, 4:slider_threat_map, 5:slider_threat_map, 6:leaper_threat_map}
-def piece_threat_map(piece, board):
+def piece_threat_map(piece, board, include_forward=False):
     ''' Generate threat map for a given piece '''
     side, piece_index, piece_padCell, move_range = piece
     threat_map_func = threat_map_func_mapping[piece_index]
-    for padCell in threat_map_func(side, piece_padCell, move_range, board):
+    for padCell in threat_map_func(side, piece_padCell, move_range, board, include_forward):
         yield padCell
 
 ## Move piece function
