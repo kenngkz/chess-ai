@@ -36,19 +36,25 @@ class MCTSAgent(Agent):
     def pred(self, obs):
         root = MCTSNode(player=-obs[0], action=None, exploration_parameter=self.explore_param, parent=None)
         start_time = time.perf_counter()
+        start = end = depth = reward = 0
         root.add_children(self.env.action_space)
+        total_time = total_depth = 0
         for i in itertools.count():
             if self.show:
-                print(f"\rIterations: {i}", end="")
+                print(f"\rIterations: {i}  -  Last rollout stats - time: {end-start:.4f}, depth: {depth}, reward: {reward}        ", end="")
             node = self._selection(root)
             node, env = self._expansion(self.env, node)
-            reward = self._rollout(env)
+            start = time.perf_counter()
+            reward, depth = self._rollout(env)
+            end = time.perf_counter()
+            total_time += end - start
+            total_depth += depth
             self._backpropogation(reward, node)
             if time.perf_counter() - start_time > self.time_limit:
                 break
         result = root.children[np.argmax([child.score["visits"] for child in root.children])].action
         if self.show:
-            message = f"\rMCTS terminated after {i+1} iterations. Final result: {result}\nMove - Ratio of visits - Average reward - Final UCB:\n"
+            message = f"\rMCTS terminated after {i+1} iterations. Final result: {result}. Average rollout time: {total_time/i}. Average depth: {total_depth/i}\nMove - Ratio of visits - Average reward - Final UCB:\n"
             moves = {child:child.score["visits"] for child in root.children}
             total = sum(moves.values())
             for child, visits in moves.items():
@@ -80,11 +86,11 @@ class MCTSAgent(Agent):
     def _rollout(self, env):
         if env.done:
             return env.last_reward
-        while True:
+        for i in itertools.count():
             obs, reward, done, info = env.step(env.sample_action())
             if done:
                 break
-        return reward
+        return reward, i
 
     def _backpropogation(self, reward, node):
         scores = {1:reward, -1:1-reward}

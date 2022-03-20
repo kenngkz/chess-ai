@@ -184,7 +184,6 @@ Piece = (side, piece_type, piece_padCell, move_range)
 def createPiece(piece_index, padCell):
     ''' Piece factory to create pieces '''
     return constants.piece_mapping[(padCell, piece_index)]
-    return (utils.sign(piece_index), abs(piece_index), padCell, constants.piece_index_move_range_mapping[piece_index])
 
 ## Threat map functions
 def pawn_threat_map(side:int, padCell:int, move_range:tuple, board:"Board", include_forward):

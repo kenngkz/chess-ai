@@ -14,7 +14,7 @@ valid_padCells = {21, 22, 23, 24, 25, 26, 27, 28, 31, 32, 33, 34, 35, 36, 37, 38
 
 # mapping of padCell number (21-98) and hashCell number (0-63)
 padCell_hashCell_mapping = {21: 0, 22: 1, 23: 2, 24: 3, 25: 4, 26: 5, 27: 6, 28: 7, 31: 8, 32: 9, 33: 10, 34: 11, 35: 12, 36: 13, 37: 14, 38: 15, 41: 16, 42: 17, 43: 18, 44: 19, 45: 20, 46: 21, 47: 22, 48: 23, 51: 24, 52: 25, 53: 26, 54: 27, 55: 28, 56: 29, 57: 30, 58: 31, 61: 32, 62: 33, 63: 34, 64: 35, 65: 36, 66: 37, 67: 38, 68: 39, 71: 40, 72: 41, 73: 42, 74: 43, 75: 44, 76: 45, 77: 46, 78: 47, 81: 48, 82: 49, 83: 50, 84: 51, 85: 52, 86: 53, 87: 54, 88: 55, 91: 56, 92: 57, 93: 58, 94: 59, 95: 60, 96: 61, 97: 62, 98: 63}
-hashCell_padCell_mapping = {0: 21, 1: 22, 2: 23, 3: 24, 4: 25, 5: 26, 6: 27, 7: 28, 8: 31, 9: 32, 10: 33, 11: 34, 12: 35, 13: 36, 14: 37, 15: 38, 16: 41, 17: 42, 18: 43, 19: 44, 20: 45, 21: 46, 22: 47, 23: 48, 24: 51, 25: 52, 26: 53, 27: 54, 28: 55, 29: 56, 30: 57, 31: 58, 32: 61, 33: 62, 34: 63, 35: 64, 36: 65, 37: 66, 38: 67, 39: 68, 40: 71, 41: 72, 42: 73, 43: 74, 44: 75, 45: 76, 46: 77, 47: 78, 48: 81, 49: 82, 50: 83, 51: 84, 52: 85, 53: 86, 54: 87, 55: 88, 56: 91, 57: 92, 58: 93, 59: 94, 60: 95, 61: 96, 62: 97, 63: 98}
+hashCell_padCell_mapping = [21, 22, 23, 24, 25, 26, 27, 28, 31, 32, 33, 34, 35, 36, 37, 38, 41, 42, 43, 44, 45, 46, 47, 48, 51, 52, 53, 54, 55, 56, 57, 58, 61, 62, 63, 64, 65, 66, 67, 68, 71, 72, 73, 74, 75, 76, 77, 78, 81, 82, 83, 84, 85, 86, 87, 88, 91, 92, 93, 94, 95, 96, 97, 98]
 
 # mapping of padCell (21-98) to userCell (eg. "a6", "f2", ...)
 padCell_userCell_mapping = {0:"0", 21: 'a1', 22: 'b1', 23: 'c1', 24: 'd1', 25: 'e1', 26: 'f1', 27: 'g1', 28: 'h1', 31: 'a2', 32: 'b2', 33: 'c2', 34: 'd2', 35: 'e2', 36: 'f2', 37: 'g2', 38: 'h2', 41: 'a3', 42: 'b3', 43: 'c3', 44: 'd3', 45: 'e3', 46: 'f3', 47: 'g3', 48: 'h3', 51: 'a4', 52: 'b4', 53: 'c4', 54: 'd4', 55: 'e4', 56: 'f4', 57: 'g4', 58: 'h4', 61: 'a5', 62: 'b5', 63: 'c5', 64: 'd5', 65: 'e5', 66: 'f5', 67: 'g5', 68: 'h5', 71: 'a6', 72: 'b6', 73: 'c6', 74: 'd6', 75: 'e6', 76: 'f6', 77: 'g6', 78: 'h6', 81: 'a7', 82: 'b7', 83: 'c7', 84: 'd7', 85: 'e7', 86: 'f7', 87: 'g7', 88: 'h7', 91: 'a8', 92: 'b8', 93: 'c8', 94: 'd8', 95: 'e8', 96: 'f8', 97: 'g8', 98: 'h8'}
@@ -22,9 +22,6 @@ padCell_userCell_mapping = {0:"0", 21: 'a1', 22: 'b1', 23: 'c1', 24: 'd1', 25: '
 ####################
 ###    Pieces    ###
 ####################
-
-# piece_index to move_range mapping
-piece_index_move_range_mapping = {0:(), -1:(10, 20, 11, 9), 1:(-10, -20, -11, -9), -2:(-12, -21, -19, -8, 12, 21, 19, 8), 2:(-12, -21, -19, -8, 12, 21, 19, 8), -3:(-11, -9, 11, 9), 3:(-11, -9, 11, 9), -4:(-1, -10, 1, 10), 4:(-1, -10, 1, 10), -5:(-1, -11, -10, -9, 1, 11, 10, 9), 5:(-1, -11, -10, -9, 1, 11, 10, 9), -6:(-1, -11, -10, -9, 1, 11, 10, 9), 6:(-1, -11, -10, -9, 1, 11, 10, 9)}
 
 # piece symbols
 piece_index_symbol_mapping = {0:"-", -1:"p", 1:"P", -2:"n", 2:"N", -3:"b", 3:"B", -4:"r", 4:"R", -5:"q", 5:"Q", -6:"k", 6:"K"}
@@ -43,7 +40,7 @@ piece_mapping = {(21, -6): (-1, 6, 21, (-1, -11, -10, -9, 1, 11, 10, 9)), (21, -
 # mapping of castle_status to castle_hash number
     # order: -5, -6, 5, 6
 castle_status_hash_mapping = {(True, True, True, True): 0, (True, True, True, False): 1, (True, True, False, True): 2, (True, False, True, True): 3, (False, True, True, True): 4, (True, True, False, False): 5, (True, False, True, False): 6, (True, False, False, True): 7, (False, True, True, False): 8, (False, True, False, True): 9, (False, False, True, True): 10, (True, False, False, False): 11, (False, True, False, False): 12, (False, False, True, False): 13, (False, False, False, True): 14, (False, False, False, False): 15}
-hash_castle_status_mapping = {0: (True, True, True, True), 1: (True, True, True, False), 2: (True, True, False, True), 3: (True, False, True, True), 4: (False, True, True, True), 5: (True, True, False, False), 6: (True, False, True, False), 7: (True, False, False, True), 8: (False, True, True, False), 9: (False, True, False, True), 10: (False, False, True, True), 11: (True, False, False, False), 12: (False, True, False, False), 13: (False, False, True, False), 14: (False, False, False, True), 15: (False, False, False, False)}
+hash_castle_status_mapping = [(True, True, True, True), (True, True, True, False), (True, True, False, True), (True, False, True, True), (False, True, True, True), (True, True, False, False), (True, False, True, False), (True, False, False, True), (False, True, True, False), (False, True, False, True), (False, False, True, True), (True, False, False, False), (False, True, False, False), (False, False, True, False), (False, False, False, True), (False, False, False, False)]
 
 # mapping of castle type index to name
 castle_names = {0:"0", -5:'Black Queenside', -6:'Black Kingside', 5: 'White Queenside', 6:'White Kingside'}
