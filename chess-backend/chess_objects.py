@@ -12,7 +12,6 @@ This script contains definitions for:
 10. King
 '''
 
-from abc import ABC, abstractmethod
 from typing import Union
 import numpy as np
 
