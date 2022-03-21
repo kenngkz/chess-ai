@@ -27,11 +27,12 @@ class MCTSAgent(Agent):
       - ucb = average_score + explore_param*sqrt(parent_visit_count/node_visit_count)
     '''
 
-    def __init__(self, env, explore_param=2, time_limit=10, show=False):
+    def __init__(self, env, explore_param=2, time_limit=10, show=False, max_depth=np.inf):
         self.env = env
         self.explore_param = explore_param
         self.time_limit = time_limit
         self.show = show
+        self.max_depth = max_depth
 
     def pred(self, obs):
         root = MCTSNode(player=-obs[0], action=None, exploration_parameter=self.explore_param, parent=None)
@@ -87,9 +88,12 @@ class MCTSAgent(Agent):
         if env.done:
             return env.last_reward
         for i in itertools.count():
-            obs, reward, done, info = env.step(env.sample_action())
-            if done:
-                break
+            if i < self.max_depth:
+                obs, reward, done, info = env.step(env.sample_action())
+                if done:
+                    break
+            else:
+                reward = self._estimate_value(obs)
         return reward, i
 
     def _backpropogation(self, reward, node):
@@ -109,3 +113,17 @@ class MCTSAgent(Agent):
                 return actions
             actions.append(node.action)
             node = node.parent
+
+    def _estimate_value(self, obs):
+        ''' Estimates the value of a observation by summing relative piece values and check_status ''' 
+        check_penalty = 5
+        piece_values = {1:1, 2:3, 3:3, 4:5, 5:9, 6:0, 0:0, -1:-1, -2:-3, -3:-3, -4:-5, -5:-9, -6:0}
+        reward_scaling_factor = 60  # scales the reward to be within range (-1, 1)
+        reward = 0
+        for index in range(64):
+            reward += piece_values[obs[index+1]]
+        if obs[-2]: # if white under check
+            reward -= check_penalty
+        elif obs[-1]: # if black under check
+            reward += check_penalty
+        return reward / reward_scaling_factor
