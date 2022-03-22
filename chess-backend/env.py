@@ -5,6 +5,7 @@ import utils
 import time
 import os
 import random
+import chess
 
 clear_console = lambda: os.system("cls")
 
@@ -115,3 +116,46 @@ class ChessEnv:
         new_env = ChessEnv(self.players[1], self.players[-1])
         new_env.set_state(gamestate)
         return new_env
+
+class ChessEnv2:
+    '''
+    Built using install python-chess. Much faster.
+    '''
+
+    def __init__(self, fen=chess.STARTING_FEN):
+        self.board = chess.Board(fen)
+        self.action_space = [move for move in self.board.legal_moves]
+
+    def reset(self):
+        self.board.reset()
+        self.action_space = [move for move in self.board.legal_moves]
+        self.last_reward = 0
+        return [1] if self.board.turn == chess.WHITE else [-1]
+
+    def step(self, move):
+        self.board.push(move)
+        self.action_space = [move for move in self.board.legal_moves]
+        self.done = self.board.is_game_over()
+        if self.done:
+            winner = self.board.outcome().winner
+            if winner == None:
+                reward = 0.5
+            elif winner == self.board.turn:
+                reward = 0
+            else:
+                reward = 1
+        else:
+            reward = 0
+        self.last_reward = reward
+        return [1] if self.board.turn == chess.WHITE else [-1], reward, self.done, None
+
+    def copy(self):
+        new_env = ChessEnv2(self.board.fen())
+        new_env.last_reward = self.last_reward
+        return new_env
+
+    def render(self):
+        print(self.board)
+
+    def sample_action(self):
+        return random.choice(self.action_space)

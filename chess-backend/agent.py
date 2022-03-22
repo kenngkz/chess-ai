@@ -42,7 +42,7 @@ class MCTSAgent(Agent):
         total_time = total_depth = 0
         for i in itertools.count():
             if self.show:
-                print(f"\rIterations: {i}  -  Last rollout stats - time: {end-start:.4f}, depth: {depth}, reward: {reward}        ", end="")
+                print(f"\rIterations: {i}  -  Last rollout stats - time: {end-start:.4f}, depth: {depth}, reward: {reward:.4f}        ", end="")
             node = self._selection(root)
             node, env = self._expansion(self.env, node)
             start = time.perf_counter()
@@ -55,11 +55,11 @@ class MCTSAgent(Agent):
                 break
         result = root.children[np.argmax([child.score["visits"] for child in root.children])].action
         if self.show:
-            message = f"\rMCTS terminated after {i+1} iterations. Final result: {result}. Average rollout time: {total_time/i}. Average depth: {total_depth/i}\nMove - Ratio of visits - Average reward - Final UCB:\n"
+            message = f"\rMCTS terminated after {i+1} iterations. Final result: {result}. Average rollout time: {total_time/i:.4f}. Average depth: {total_depth/i:.4f}\nMove - Ratio of visits - Average reward - Final UCB:\n"
             moves = {child:child.score["visits"] for child in root.children}
             total = sum(moves.values())
             for child, visits in moves.items():
-                message += f"{child.action} - {visits/total if total != 0 else visits} - {child.score['reward']/visits if visits != 0 else 0} - {child.ucb()}\n"
+                message += f"{child.action} - {visits/total if total != 0 else visits:.5f} - {child.score['reward']/visits if visits != 0 else 0:.5f} - {child.ucb():.5f}\n"
             print(message)
         return result
 
@@ -86,7 +86,7 @@ class MCTSAgent(Agent):
 
     def _rollout(self, env):
         if env.done:
-            return env.last_reward
+            return env.last_reward, 0
         for i in itertools.count():
             if i < self.max_depth:
                 obs, reward, done, info = env.step(env.sample_action())
@@ -94,6 +94,7 @@ class MCTSAgent(Agent):
                     break
             else:
                 reward = self._estimate_value(obs)
+                break
         return reward, i
 
     def _backpropogation(self, reward, node):
@@ -118,7 +119,7 @@ class MCTSAgent(Agent):
         ''' Estimates the value of a observation by summing relative piece values and check_status ''' 
         check_penalty = 5
         piece_values = {1:1, 2:3, 3:3, 4:5, 5:9, 6:0, 0:0, -1:-1, -2:-3, -3:-3, -4:-5, -5:-9, -6:0}
-        reward_scaling_factor = 60  # scales the reward to be within range (-1, 1)
+        reward_scaling_factor = 120  # scales the reward to be within range (0, 1)
         reward = 0
         for index in range(64):
             reward += piece_values[obs[index+1]]
@@ -126,4 +127,4 @@ class MCTSAgent(Agent):
             reward -= check_penalty
         elif obs[-1]: # if black under check
             reward += check_penalty
-        return reward / reward_scaling_factor
+        return 0.5 + reward / reward_scaling_factor

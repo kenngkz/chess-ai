@@ -90,3 +90,11 @@ def dehash_cell(hashCell:int) -> int:
 
 def pad_to_usercell(padCell:int) -> str:
     return constants.padCell_userCell_mapping[padCell]
+
+##############################
+###    Notation Parsing    ###
+##############################
+
+def parse_fen(self, fen):
+    ''' Parses fen notation and return a obs tuple '''
+    pass
