@@ -4,6 +4,7 @@ Utility functions
 
 import numpy as np
 from typing import Union
+import chess
 
 import constants
 
@@ -95,6 +96,64 @@ def pad_to_usercell(padCell:int) -> str:
 ###    Notation Parsing    ###
 ##############################
 
-def parse_fen(self, fen):
-    ''' Parses fen notation and return a obs tuple '''
-    pass
+def parse_fen(fen:str):
+    '''
+    Parses fen notation and return a obs tuple.
+
+    Obs tuple indices: 
+        - 0 - 63: index of pieces in each cell on the board
+        - 64 - 67: whether castling is allowed (1 if allowed else 0). order: white kingside, white queenside, black kingside, black queenside
+        - 65: player to move. 1 if white 0 if black
+        - 66: whether white under check (1 if under check else 0)
+        - 67: whether black under check (1 if under check else 0)
+    '''
+    tup = tuple(0 for _ in range(66))
+    sections = fen.split(" ")
+
+    # board section of fen
+    index = 0
+    for char in sections[0]:
+        if char == "/":
+            index += 1
+        elif char.isnumeric():
+            index += int(char)
+        elif char in constants.symbol_piece_index_mapping:
+            tup[index] = constants.symbol_piece_index_mapping[char]
+            index += 1
+        else:
+            raise KeyError(f"Char {char} in board section of fen not recognized")
+        
+    # player to move
+    if sections[1] == "w":
+        tup[65] = 1
+
+    # castling status
+    if sections[2] == "-":
+        pass
+    else:
+        if "K" in sections[2]:
+            tup[64] = 1
+        if "Q" in sections[2]:
+            tup[65] = 1
+        if "k" in sections[2]:
+            tup[66] = 1
+        if "q" in sections[2]:
+            tup[67] = 1
+
+    # check status
+    board = chess.Board(fen)
+    check_status_combinations = {
+        (True, True, False):(1, 0),
+        (True, False, True):(0, 1),
+        (True, False, False):(0, 0),
+        (False, True, False):(0, 1),
+        (False, False, True):(1, 0),
+        (False, False, False):(0, 0)
+    }
+    check_status = (board.turn, board.is_check(), None)
+    board.turn = not board.turn
+    check_status[-1] = board.is_check()
+    check_status = check_status_combinations[check_status]
+    tup[-2], tup[-1] = check_status[0], check_status[1]
+        
+    return tup

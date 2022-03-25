@@ -22,16 +22,6 @@ import utils
 ###    Board    ###
 ###################
 
-'''
-hashBoard: Store a board position as a hashBoard
-
-hashBoard: c0 + c1*13 + c2*(13**2) + c3*(13**3) + ... c63*(13**63) + cs*(16*64)
-    - each hashCell c can take values from 0 - 12 inclusive
-        - piece_index = hashCell_val - 6
-'''
-
-hash_size = 13  # number of possible states in each hashCell
-
 class Board:
     ''' Interface for all other chess objects '''
 
