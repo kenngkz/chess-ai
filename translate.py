@@ -7,9 +7,9 @@ Move tuple:
 
 import constants
 import chess.pgn
-import utils
+import pandas as pd
 
-def translate_pgn(filepath, writepath="game_data.txt"):
+def translate_pgn(filepath, writepath="game_data.csv"):
 
     data = []
     
@@ -20,18 +20,14 @@ def translate_pgn(filepath, writepath="game_data.txt"):
                 break
             board = game.board()
             for move in game.mainline_moves():
-                move_tup = list(range(272))
-                move_tup[constants.uci_moves[move.uci()]] = 1
-                data.append([utils.parse_fen(board.fen()), tuple(move_tup)])
+                data.append([board.fen(), constants.uci_moves[move.uci()]])
                 board.push(move)
     
-    with open(writepath, "w") as f:
-        f.write(data)
-                
-
+    data = pd.DataFrame(data, columns=["board", "move"])
+    data.to_csv(writepath)
 
 if __name__ == "__main__":
-    filepath = "data/test.pgn"
-    writepath = "data/test.txt"
+    filepath = "data/chessgames2016.pgn"
+    writepath = "data/chess2016.csv"
 
     translate_pgn(filepath, writepath)
