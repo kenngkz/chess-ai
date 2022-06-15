@@ -4,6 +4,7 @@ Utility functions
 
 from typing import Union
 import chess as pychess
+import numpy as np
 
 import constants
 
@@ -43,14 +44,14 @@ def path_join(*args):
 
 def parse_fen(fen:str):
     '''
-    Parses fen notation and return a obs tuple.
+    Parses fen notation and return a obs numpy array.
     Obs tuple indices: 
         - 0: player to move. 1 if white 0 if black
         - 1 - 64: index of pieces in each cell on the board
         - 65 - 68: whether castling is allowed (1 if allowed else 0). order: white kingside, white queenside, black kingside, black queenside
         - 69: whether player_to_move is under check (1 if under check else 0)
     '''
-    obs = [0 for _ in range(70)]
+    obs = np.zeros(70, dtype=np.int16)
     sections = fen.split(" ")
 
     # player to move
@@ -89,4 +90,4 @@ def parse_fen(fen:str):
     board = pychess.Board(fen)
     obs[69] = int(board.is_check())
     
-    return tuple(obs)
+    return obs
