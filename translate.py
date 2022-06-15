@@ -27,7 +27,14 @@ def translate_pgn(filepath, writepath="game_data.csv"):
     data.to_csv(writepath)
 
 if __name__ == "__main__":
-    filepath = "data/chessgames2016.pgn"
-    writepath = "data/chess2016.csv"
+    import os
 
-    translate_pgn(filepath, writepath)
+    years = ["2016", "2017", "2018", "2019", "2020", "2021"]
+    for year in years:
+        print(f"Processing year {year}")
+
+        filepath = f"data/chessgames{year}.pgn"
+        writepath = f"data/chess{year}.csv"
+
+        if not os.path.exists(writepath):
+            translate_pgn(filepath, writepath)
