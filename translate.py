@@ -19,22 +19,29 @@ def translate_pgn(filepath, writepath="game_data.csv"):
             if game == None:
                 break
             board = game.board()
+            game_data = []
             for move in game.mainline_moves():
-                data.append([board.fen(), constants.uci_moves[move.uci()]])
+                game_data.append([board.fen(), constants.uci_moves[move.uci()], None])
                 board.push(move)
+            outcome = board.outcome()
+            for row in game_data:
+                row[2] = outcome
+            data += game_data   
     
-    data = pd.DataFrame(data, columns=["board", "move"])
+    data = pd.DataFrame(data, columns=["board", "move", "outcome"])
     data.to_csv(writepath)
 
 if __name__ == "__main__":
     import os
 
-    years = ["2016", "2017", "2018", "2019", "2020", "2021"]
-    for year in years:
-        print(f"Processing year {year}")
+    # years = ["2016", "2017", "2018", "2019", "2020", "2021"]
+    # for year in years:
+    #     print(f"Processing year {year}")
 
-        filepath = f"data/chessgames{year}.pgn"
-        writepath = f"data/chess{year}.csv"
+    #     filepath = f"data/chessgames{year}.pgn"
+    #     writepath = f"data/chess{year}.csv"
 
-        if not os.path.exists(writepath):
-            translate_pgn(filepath, writepath)
+    #     if not os.path.exists(writepath):
+    #         translate_pgn(filepath, writepath)
+
+    translate_pgn("data/test.pgn", "data/test.csv")
