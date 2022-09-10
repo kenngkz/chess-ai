@@ -6,11 +6,10 @@ from typing import Union
 import chess as pychess
 import numpy as np
 
-import constants
+import constants as constants
 
-###################
-### Basic Utils ###
-###################
+
+### BASIC UTILS ###
 
 def add(v1, v2):
     ''' Element-wise vector addition '''
@@ -38,9 +37,8 @@ def path_join(*args):
         path += arg
     return path[:-1]
 
-##############################
-###    Notation Parsing    ###
-##############################
+
+###  NOTATION PARSING ###
 
 def parse_fen(fen:str):
     '''
@@ -91,6 +89,7 @@ def parse_fen(fen:str):
     obs[69] = int(board.is_check())
     
     return obs
+
 
 ### LOGGING ###
 
