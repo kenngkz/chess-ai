@@ -1,0 +1,4 @@
+chess
+ipykernel
+pandas
+matplotlib
