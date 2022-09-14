@@ -1,3 +1,4 @@
+''' grid search exploration parameter for mcts '''
 import os
 import chess
 import random
@@ -10,17 +11,17 @@ def search(grid_values, max_depth, n_games, max_turns=100, time_limit=5):
     agents = {v:MCTSAgent(explore_param=v, time_limit=time_limit, max_depth=max_depth, show=0) for v in grid_values}
     scores = {v:[] for v in grid_values}
 
-    v_done = []
+    v_started = []
     si = 0
     if os.path.exists("scores.txt"):
         with open("scores.txt", "r") as f:
             scores = eval(f.read())
-        v_done = [v for v, ls in scores.items() if len(ls) > 0]
-        si = len(scores[max(v_done)]) if len(v_done) > 0 else 0
+        v_started = [v for v, ls in scores.items() if len(ls) > 0]
+        si = len(scores[max(v_started)]) if len(v_started) > 0 else 0
 
     for v, agent in agents.items():
         opps = [a for a in agents.values() if a != agent]
-        if v in v_done:
+        if len(scores[v]) >= n_games:
             continue
         for i in range(si, n_games):
             opp = random.choice(opps)
@@ -42,10 +43,11 @@ def search(grid_values, max_depth, n_games, max_turns=100, time_limit=5):
             print("")
             with open("scores.txt", "w") as f:
                 f.write(str(scores))
+        si = 0
     return {v:sum(l) for v, l in scores.items()}
 
 if __name__ == "__main__":
     grid = np.linspace(0,3,7)
     print(grid)
-    scores = search(grid_values=grid, max_depth=10, n_games=20, max_turns=100)
+    scores = search(grid_values=grid, max_depth=10, n_games=20, max_turns=100, time_limit=5)
     print(scores)

@@ -9,7 +9,7 @@ from math import log
 
 import utils
 
-# logger = utils.get_logger("mcts")
+logger = utils.get_logger("mcts")
 
 class MCTSNode:
 
@@ -89,7 +89,7 @@ class MCTSAgent:
         result = random.choice(best_children).action
         if self.show > 0:
             print(f"\rMCTS terminated after {i+1} iterations. Final result: {result} with {max_visit} visits. Average rollout time: {total_time/i:.4f}. Average depth: {total_depth/i:.4f}")
-        # logger.debug(f"MOVE - turn:{self.turn} reason:{why} action:{result.uci()} iters:{i+1} max_visit:{max_visit} avg_rollout_time:{total_time/i:.4f} avg_depth:{total_depth/i:.4f} state:{fen}")
+        logger.debug(f"MOVE - turn:{self.turn} reason:{why} action:{result.uci()} iters:{i+1} max_visit:{max_visit} avg_rollout_time:{total_time/i:.4f} avg_depth:{total_depth/i:.4f} state:{fen}")
         if self.show > 1:
             distribution = pd.DataFrame({
                 "action":[child.action.uci() for child in root.children], 

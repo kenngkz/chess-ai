@@ -2,3 +2,4 @@ chess
 ipykernel
 pandas
 matplotlib
+tensorflow-macos

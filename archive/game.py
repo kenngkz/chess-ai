@@ -97,7 +97,7 @@ EnvState dict format (file is saved in json format)
 '''
 
 if __name__ == "__main__":
-    from agent import MCTSAgent, RandomAgent
+    from archive.agent import MCTSAgent, RandomAgent
 
     env = ChessEnv()
     obs = env.reset()
