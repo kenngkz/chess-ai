@@ -28,7 +28,6 @@ class RandomAgent(Agent):
 ###################################
 
 class MCTSNode:
-    ''' Store Q-values and actions in a tree '''
 
     def __init__(self, player, action, exploration_parameter, parent=None):
         self.player = player  # 1 for reward maximising player and -1 for reward minimizing player
@@ -36,6 +35,8 @@ class MCTSNode:
         self.exploration_parameter = exploration_parameter
         self.parent = parent
         self.score = {"reward":0, "visits":0}
+        self.update = False
+        self.last_ucb = np.inf
         self.children = []
 
     def add_children(self, action_space):
@@ -46,13 +47,15 @@ class MCTSNode:
     def update_score(self, reward):
         self.score["reward"] += reward
         self.score["visits"] += 1
+        self.update = True
 
     def ucb(self):
-        if self.score["visits"] == 0:
-            return np.inf
-        avg_score = self.score["reward"]/self.score["visits"]
-        exploration_term = self.exploration_parameter * np.sqrt(log(self.parent.score["visits"])/self.score["visits"])
-        return avg_score + exploration_term
+        if self.update:
+            avg_score = self.score["reward"]/self.score["visits"]
+            exploration_term = self.exploration_parameter * np.sqrt(log(self.parent.score["visits"])/self.score["visits"])
+            self.last_ucb = avg_score + exploration_term
+            self.update = False
+        return self.last_ucb
 
 class MCTSAgent(Agent):
     '''

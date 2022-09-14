@@ -4,12 +4,12 @@ Utility functions
 
 from typing import Union
 import chess as pychess
+import numpy as np
 
-import constants
+import constants as constants
 
-###################
-### Basic Utils ###
-###################
+
+### BASIC UTILS ###
 
 def add(v1, v2):
     ''' Element-wise vector addition '''
@@ -37,20 +37,19 @@ def path_join(*args):
         path += arg
     return path[:-1]
 
-##############################
-###    Notation Parsing    ###
-##############################
+
+###  NOTATION PARSING ###
 
 def parse_fen(fen:str):
     '''
-    Parses fen notation and return a obs tuple.
+    Parses fen notation and return a obs numpy array.
     Obs tuple indices: 
         - 0: player to move. 1 if white 0 if black
         - 1 - 64: index of pieces in each cell on the board
         - 65 - 68: whether castling is allowed (1 if allowed else 0). order: white kingside, white queenside, black kingside, black queenside
         - 69: whether player_to_move is under check (1 if under check else 0)
     '''
-    obs = [0 for _ in range(70)]
+    obs = np.zeros(70, dtype=np.int16)
     sections = fen.split(" ")
 
     # player to move
@@ -89,4 +88,61 @@ def parse_fen(fen:str):
     board = pychess.Board(fen)
     obs[69] = int(board.is_check())
     
-    return tuple(obs)
+    return obs
+
+
+### LOGGING ###
+
+import logging
+import os
+import sys
+import time
+from datetime import timedelta
+from logging.handlers import RotatingFileHandler
+
+if not os.path.exists("logs"):
+    os.makedirs("logs")
+
+FORMATTER = logging.Formatter("%(message)s")
+LOG_FILE = "logs/log.log"
+
+def get_console_handler():
+   console_handler = logging.StreamHandler(sys.stdout)
+   console_handler.setFormatter(FORMATTER)
+   return console_handler
+def get_file_handler():
+   file_handler = RotatingFileHandler(LOG_FILE, maxBytes=64000, backupCount=10)
+   file_handler.setFormatter(FORMATTER)
+   return file_handler
+def get_logger(logger_name):
+   logger = logging.getLogger(logger_name)
+   logger.setLevel(logging.DEBUG) # better to have too much log than not enough
+   logger.addHandler(get_console_handler())
+   logger.addHandler(get_file_handler())
+   # with this pattern, it's rarely necessary to propagate the error up to parent
+   logger.propagate = False
+   adapter = CustomAdapter(logger)
+   return adapter
+
+class CustomFormatter:
+   def __init__(self):
+      self.start_time = time.time()
+
+   def format(self, record):
+      elapsed_seconds = record.created - self.start_time
+      #using timedelta here for convenient default formatting
+      elapsed = timedelta(seconds = elapsed_seconds)
+      return "{} | {}".format(elapsed, record.getMessage())
+
+class CustomAdapter(logging.LoggerAdapter):
+   """
+   Adds the elapsed time since start of script
+   """
+   def __init__(self, logger, extra={}):
+      super().__init__(logger, extra)
+      self.start_time = time.time()
+
+   def process(self, msg, kwargs):
+      elapsed = time.time() - self.start_time
+      parsed_time = f"{elapsed//3600:02.0f}:{elapsed%3600//60:02.0f}:{elapsed%60:02.0f}"
+      return f'{parsed_time} | {msg}', kwargs
