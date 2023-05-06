@@ -1,5 +1,7 @@
+# python 3.10.11
 chess
 ipykernel
 pandas
 matplotlib
 tensorflow-macos
+pyyaml

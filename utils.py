@@ -44,8 +44,8 @@ def parse_fen(fen:str):
     '''
     Parses fen notation and return a obs numpy array.
     Obs tuple indices: 
-        - 0: player to move. 1 if white 0 if black
-        - 1 - 64: index of pieces in each cell on the board
+        - 0 - 63: index of pieces in each cell on the board
+        - 64: player to move. 1 if white -1 if black
         - 65 - 68: whether castling is allowed (1 if allowed else 0). order: white kingside, white queenside, black kingside, black queenside
         - 69: whether player_to_move is under check (1 if under check else 0)
     '''
@@ -54,12 +54,12 @@ def parse_fen(fen:str):
 
     # player to move
     if sections[1] == "w":
-        obs[0] = 1
+        obs[64] = 1
     else:
-        obs[0] = -1
+        obs[64] = -1
 
     # board section of fen
-    index = 1
+    index = 0
     for char in sections[0]:
         if char == "/":
             pass
