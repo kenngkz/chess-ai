@@ -2,6 +2,5 @@ data/
 __pycache__/
 ckpt/
 .ipynb_checkpoints/
-scores.txt
 logs/
 .DS_Store
