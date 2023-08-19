@@ -1,10 +1,9 @@
-import chess
 from chess.pgn import read_game
 import random
 import pandas as pd
 
-import constants
-from transformations.fen_to_obs import parse_fen_board, parse_fen_misc
+from src.constants import UCI_MOVES
+from src.transformations.fen_to_obs import _parse_fen_board, _parse_fen_misc
 
 
 def split_pgn():
@@ -27,7 +26,7 @@ def split_pgn():
                     df.append(
                         {
                             "board": board.fen(),
-                            "move": constants.uci_moves[move.uci()],
+                            "move": UCI_MOVES[move.uci()],
                             "outcome": result,
                         }
                     )
@@ -62,8 +61,8 @@ def shuffle_csv(rounds=10, batch_size=10):
 
 
 def process_df(df):
-    df["obs_board"] = df["board"].map(parse_fen_board)
-    df["obs_misc"] = df["board"].map(parse_fen_misc)
+    df["obs_board"] = df["board"].map(_parse_fen_board)
+    df["obs_misc"] = df["board"].map(_parse_fen_misc)
     return df
 
 
