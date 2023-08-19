@@ -1,29 +1,38 @@
-''' FEN to obs '''
+""" FEN to obs """
 
 import chess
 import numpy as np
 
-from src import constants
+from src.constants import SYMBOL_PIECE_INDEX_MAPPING
 
-def parse_fen_board(fen:str) -> np.ndarray:
+
+def parse_fen(fen: str) -> np.ndarray:
+    board = _parse_fen_board(fen)
+    misc = _parse_fen_misc(fen)
+
+    return np.concatenate([board, misc])
+
+
+def _parse_fen_board(fen: str) -> np.ndarray:
     obs = np.zeros(64, dtype=np.int16)
     sections = fen.split(" ")
 
     index = 0
     for char in sections[0]:
         if char == "/":
-            pass
+            continue
         elif char.isnumeric():
             index += int(char)
-        elif char in constants.symbol_piece_index_mapping:
-            obs[index] = constants.symbol_piece_index_mapping[char]
+        elif char in SYMBOL_PIECE_INDEX_MAPPING:
+            obs[index] = SYMBOL_PIECE_INDEX_MAPPING[char]
             index += 1
         else:
             raise KeyError(f"Char {char} in board section of fen not recognized")
 
     return obs
 
-def parse_fen_misc(fen:str) -> np.ndarray:
+
+def _parse_fen_misc(fen: str) -> np.ndarray:
     obs = np.zeros(6, dtype=np.int16)
     sections = fen.split(" ")
 
@@ -32,7 +41,7 @@ def parse_fen_misc(fen:str) -> np.ndarray:
         obs[0] = 1
     else:
         obs[0] = -1
-    
+
     # castling status
     if sections[2] == "-":
         pass
@@ -49,11 +58,5 @@ def parse_fen_misc(fen:str) -> np.ndarray:
     # under_check status
     board = chess.Board(fen)
     obs[5] = int(board.is_check())
-    
+
     return obs
-
-def parse_fen(fen:str) -> np.ndarray:
-    board = parse_fen_board(fen)
-    misc = parse_fen_misc(fen)
-
-    return np.concatenate([board, misc])
