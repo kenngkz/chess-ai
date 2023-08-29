@@ -285,7 +285,7 @@ class MCTSAgent:
     @staticmethod
     def _estimate_value(fen: str) -> float:
         """Estimates the value of a observation by summing relative piece values and check_status"""
-        check_penalty = 5
+        check_penalty = 2
         piece_values = {
             "p": -1,
             "n": -3,
