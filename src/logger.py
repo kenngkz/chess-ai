@@ -6,7 +6,7 @@ from typing import Dict, Optional
 
 from colorama import Back, Fore, Style
 
-from config import LOG_DIR, LOG_LEVEL_CONSOLE, LOG_LEVEL_FILE
+from src.config import LOG_DIR, LOG_LEVEL_CONSOLE, LOG_LEVEL_FILE
 
 
 class ColoredFormatter(logging.Formatter):
@@ -60,7 +60,7 @@ def get_logger(name, prefix: str = ""):
     # dirname = os.path.dirname(__file__)
     # logs_path = os.path.join(dirname, '../bot_logs/bot.log')
     # logs_path = os.path.normpath(logs_path)
-    logs_path = f"./{LOG_DIR}/automation.log"
+    logs_path = f"./{LOG_DIR}/log.txt"
 
     create_file_if_not_exists(logs_path)
     file_handler = logging.FileHandler(logs_path)
