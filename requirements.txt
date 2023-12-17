@@ -6,3 +6,4 @@ matplotlib
 tensorflow-macos
 pyyaml
 colorama
+scipy
