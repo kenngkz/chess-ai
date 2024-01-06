@@ -41,7 +41,7 @@ class MCTS():
         bestChild = self.getBestChild(self.root, 0)
         action=(action for action, node in self.root.children.items() if node is bestChild).__next__()
         if needDetails:
-            return {"action": action, "expectedReward": bestChild.totalReward / bestChild.numVisits}
+            return {"action": action, "expectedReward": bestChild.totalReward / bestChild.numVisits, "totalRollouts":self.root.numVisits}
         else:
             return action
 
