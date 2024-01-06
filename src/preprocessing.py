@@ -1,14 +1,16 @@
-from chess.pgn import read_game
+import os
 import random
+from typing import List
+
 import pandas as pd
+from chess.pgn import read_game
 
 from src.constants import UCI_MOVES
 from src.transformations.fen_to_obs import _parse_fen_board, _parse_fen_misc
 
 
-def split_pgn():
+def split_pgn(pgn_files):
     """Split PGN games into moves in multiple CSV files with boards in FEN representation"""
-    pgn_files = [f"data/raw/chessgames20{i}.pgn" for i in range(16, 22)]
     outcomes = {"1": 1.0, "1/2": 0.5, "0": 0.0}
     df = []
     file_counter = 1
@@ -39,13 +41,13 @@ def split_pgn():
                 game = read_game(f)
 
 
-def shuffle_csv(rounds=10, batch_size=10):
-    files = [f"data/split/chess{i}.csv" for i in range(1, 27)]
+def shuffle_csv(sample_file_path, rounds=10, batch_size=10):
+    files = [f"data/split/chess{i}.csv" for i in range(1, len(os.listdir(os.path.dirname(sample_file_path)))+1)]
     n_rows = 1000000
     leftover = pd.DataFrame([], columns=["board", "move", "outcome"])
     for i in range(rounds):
         print(f"round {i+1}/{rounds}")
-        picked_files = random.sample(files, batch_size)
+        picked_files = random.sample(files, min(batch_size, len(files)))
         df = pd.DataFrame([], columns=["board", "move", "outcome"])
         for file in picked_files:
             df = pd.concat([df, pd.read_csv(file)], ignore_index=True)
@@ -56,7 +58,7 @@ def shuffle_csv(rounds=10, batch_size=10):
     leftover = leftover.sample(frac=1)
     for i in range(len(leftover) // n_rows + 1):
         leftover.iloc[(n_rows * i) : (n_rows * (i + 1))].to_csv(
-            f"data/split/chess{27+i}.csv", index=False
+            f"data/split/chess{len(files)+i}.csv", index=False
         )
 
 
@@ -74,7 +76,7 @@ def process_file(file_numbers):
         df.to_pickle(f"data/split/processed/chess{n}.pkl")
 
 
-def process_raw_data(file_numbers=[1, 2, 3, 4, 5]):
-    split_pgn()
-    shuffle_csv()
+def process_raw_data(pgn_files:List[str], file_numbers=[1, 2, 3, 4, 5]):
+    split_pgn(pgn_files)
+    shuffle_csv(pgn_files[0])
     process_file(file_numbers)

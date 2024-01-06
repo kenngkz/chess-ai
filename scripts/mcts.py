@@ -23,36 +23,37 @@ def random_fen():
     return board.fen()
 
 
-fen = STARTING_FEN
+if __name__ == "__main__":
+    fen = STARTING_FEN
 
-board = chess.Board(fen)
-white_mcts = MCTS(
-    timeLimitSeconds=10,
-    rolloutPolicy=RandomMaxDepthPolicy(5)
-)
-black_mcts = MCTS(
-    timeLimitSeconds=1,
-    rolloutPolicy=RandomMaxDepthPolicy(5)
-)
+    board = chess.Board(fen)
+    white_mcts = MCTS(
+        timeLimitSeconds=10,
+        rolloutPolicy=RandomMaxDepthPolicy(5)
+    )
+    black_mcts = MCTS(
+        timeLimitSeconds=1,
+        rolloutPolicy=RandomMaxDepthPolicy(5)
+    )
 
-for i in range(3):
-    board.push(random.choice([move for move in board.legal_moves]))
+    for i in range(3):
+        board.push(random.choice([move for move in board.legal_moves]))
 
 
 
-print("Starting Board")
-render(board)
-for _ in range(1000):
-    if board.turn == chess.WHITE:
-        action = white_mcts.search(ChessState(board.fen()), True)
-        print(f"White {action = }")
-    else:
-        action = black_mcts.search(ChessState(board.fen()), True)
-        print(f"Black {action = }")
-    board.push(action["action"])
-    print(board.fen())
+    print("Starting Board")
     render(board)
+    for _ in range(1000):
+        if board.turn == chess.WHITE:
+            action = white_mcts.search(ChessState(board.fen()), True)
+            print(f"White {action = }")
+        else:
+            action = black_mcts.search(ChessState(board.fen()), True)
+            print(f"Black {action = }")
+        board.push(action["action"])
+        print(board.fen())
+        render(board)
 
-    if board.is_game_over():
-        print(board.outcome())
-        break
+        if board.is_game_over():
+            print(board.outcome())
+            break
