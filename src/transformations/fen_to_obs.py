@@ -7,6 +7,7 @@ from src.constants import SYMBOL_PIECE_INDEX_MAPPING
 
 
 def parse_fen(fen: str) -> np.ndarray:
+    """Output: vector with length 70"""
     board = _parse_fen_board(fen)
     misc = _parse_fen_misc(fen)
 
@@ -14,6 +15,7 @@ def parse_fen(fen: str) -> np.ndarray:
 
 
 def _parse_fen_board(fen: str) -> np.ndarray:
+    """Output: vector with length 64, values between -6 to 6 (13 possible values)"""
     obs = np.zeros(64, dtype=np.int16)
     sections = fen.split(" ")
 
