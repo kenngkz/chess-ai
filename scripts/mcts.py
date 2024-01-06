@@ -7,43 +7,52 @@ if os.path.basename(os.getcwd()) == SCRIPTS_DIRNAME:
     os.chdir("..")  # change to the project directory
 sys.path.append(os.getcwd())
 
+import random
+
 import chess
 
 from src.constants import STARTING_FEN
-from src.mcts.agent import MCTSAgent, render
+from src.mcts import MCTS, ChessState, RandomMaxDepthPolicy
+from src.mcts.render import render
 
-if __name__ == "__main__":
-    state = STARTING_FEN
-    board = chess.Board(state)
-    white_mcts = MCTSAgent(
-        side_is_white=True,
-        show=MCTSAgent.ShowLevel.MOVE,
-        max_depth=5,
-        time_limit=60,
-        explore_param=0.2,
-        ucb_base=None,
-    )
-    black_mcts = MCTSAgent(
-        side_is_white=False,
-        show=MCTSAgent.ShowLevel.MOVE,
-        max_depth=5,
-        time_limit=60,
-        explore_param=0.2,
-    )
 
-    # for i in range(20):
-    #     board.push(random.choice([move for move in board.legal_moves]))
+def random_fen():
+    board = chess.Board(STARTING_FEN)
+    for i in range(random.randint(10, 30)):
+        board.push(random.choice([move for move in board.legal_moves]))
+    return board.fen()
 
-    for _ in range(1000):
-        if board.turn == chess.WHITE:
-            action = white_mcts.pred(board.fen())
-            print(f"White {action = }")
-        else:
-            action = black_mcts.pred(board.fen())
-            print(f"Black {action = }")
-        board.push(action)
-        render(board)
 
-        if board.is_game_over():
-            print(board.outcome())
-            break
+fen = STARTING_FEN
+
+board = chess.Board(fen)
+white_mcts = MCTS(
+    timeLimitSeconds=10,
+    rolloutPolicy=RandomMaxDepthPolicy(5)
+)
+black_mcts = MCTS(
+    timeLimitSeconds=1,
+    rolloutPolicy=RandomMaxDepthPolicy(5)
+)
+
+for i in range(3):
+    board.push(random.choice([move for move in board.legal_moves]))
+
+
+
+print("Starting Board")
+render(board)
+for _ in range(1000):
+    if board.turn == chess.WHITE:
+        action = white_mcts.search(ChessState(board.fen()), True)
+        print(f"White {action = }")
+    else:
+        action = black_mcts.search(ChessState(board.fen()), True)
+        print(f"Black {action = }")
+    board.push(action["action"])
+    print(board.fen())
+    render(board)
+
+    if board.is_game_over():
+        print(board.outcome())
+        break
