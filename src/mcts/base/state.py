@@ -19,7 +19,7 @@ class BaseState(ABC):
     @abstractmethod
     def isTerminal(self) -> bool:
         pass
-    
+
     @abstractmethod
     def getReward(self) -> float:
         pass

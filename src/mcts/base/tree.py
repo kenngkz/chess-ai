@@ -7,15 +7,20 @@ from .rollout_policy import BasePolicy, RandomPolicy
 from .state import BaseState
 
 
-class MCTS():
-    def __init__(self, timeLimitSeconds:float=None, iterationLimit=None, explorationConstant=1 / math.sqrt(2),
-                 rolloutPolicy:BasePolicy=RandomPolicy):
+class MCTS:
+    def __init__(
+        self,
+        timeLimitSeconds: float = None,
+        iterationLimit=None,
+        explorationConstant=1 / math.sqrt(2),
+        rolloutPolicy: BasePolicy = RandomPolicy,
+    ):
         if timeLimitSeconds != None:
             if iterationLimit != None:
                 raise ValueError("Cannot have both a time limit and an iteration limit")
             # time taken for each MCTS search in milliseconds
             self.timeLimit = timeLimitSeconds
-            self.limitType = 'time'
+            self.limitType = "time"
         else:
             if iterationLimit == None:
                 raise ValueError("Must have either a time limit or an iteration limit")
@@ -23,14 +28,14 @@ class MCTS():
             if iterationLimit < 1:
                 raise ValueError("Iteration limit must be greater than one")
             self.searchLimit = iterationLimit
-            self.limitType = 'iterations'
+            self.limitType = "iterations"
         self.explorationConstant = explorationConstant
         self.rollout_policy = rolloutPolicy
 
-    def search(self, initialState:BaseState, needDetails:bool=False):
+    def search(self, initialState: BaseState, needDetails: bool = False):
         self.root = MCTSNode(initialState, None)
 
-        if self.limitType == 'time':
+        if self.limitType == "time":
             timeLimit = time.time() + self.timeLimit
             while time.time() < timeLimit:
                 self.executeRound()
@@ -39,15 +44,21 @@ class MCTS():
                 self.executeRound()
 
         bestChild = self.getBestChild(self.root, 0)
-        action=(action for action, node in self.root.children.items() if node is bestChild).__next__()
+        action = (
+            action for action, node in self.root.children.items() if node is bestChild
+        ).__next__()
         if needDetails:
-            return {"action": action, "expectedReward": bestChild.totalReward / bestChild.numVisits, "totalRollouts":self.root.numVisits}
+            return {
+                "action": action,
+                "expectedReward": bestChild.totalReward / bestChild.numVisits,
+                "totalRollouts": self.root.numVisits,
+            }
         else:
             return action
 
     def executeRound(self):
         """
-            execute a selection-expansion-simulation-backpropagation round
+        execute a selection-expansion-simulation-backpropagation round
         """
         node = self.selectNode(self.root)
         reward = self.rollout_policy.rollout(node.state)
@@ -73,22 +84,23 @@ class MCTS():
 
         raise Exception("Should never reach here")
 
-    def backpropogate(self, node: MCTSNode, reward:float):
+    def backpropogate(self, node: MCTSNode, reward: float):
         while node is not None:
             node.numVisits += 1
             node.totalReward += reward
             node = node.parent
 
-    def getBestChild(self, node:MCTSNode, explorationValue:float):
+    def getBestChild(self, node: MCTSNode, explorationValue: float):
         bestValue = float("-inf")
         bestNodes = []
         for child in node.children.values():
-            nodeValue = node.state.getCurrentPlayer() * child.totalReward / child.numVisits + explorationValue * math.sqrt(
-                2 * math.log(node.numVisits) / child.numVisits)
+            nodeValue = (
+                node.state.getCurrentPlayer() * child.totalReward / child.numVisits
+                + explorationValue * math.sqrt(2 * math.log(node.numVisits) / child.numVisits)
+            )
             if nodeValue > bestValue:
                 bestValue = nodeValue
                 bestNodes = [child]
             elif nodeValue == bestValue:
                 bestNodes.append(child)
         return random.choice(bestNodes)
-    

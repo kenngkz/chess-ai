@@ -6,7 +6,7 @@ from .base.state import BaseState
 
 class RandomMaxDepthPolicy(BasePolicy):
 
-    def __init__(self, max_depth:int=5):
+    def __init__(self, max_depth: int = 5):
         self.max_depth = max_depth
 
     def rollout(self, state: BaseState) -> float:

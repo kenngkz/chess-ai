@@ -12,9 +12,7 @@ from src.config import LOG_DIR, LOG_LEVEL_CONSOLE, LOG_LEVEL_FILE
 class ColoredFormatter(logging.Formatter):
     """Colored log formatter."""
 
-    def __init__(
-        self, *args, colors: Optional[Dict[str, str]] = None, **kwargs
-    ) -> None:
+    def __init__(self, *args, colors: Optional[Dict[str, str]] = None, **kwargs) -> None:
         """Initialize the formatter with specified format strings."""
 
         super().__init__(*args, **kwargs)

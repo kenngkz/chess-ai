@@ -20,9 +20,7 @@ def split_pgn(pgn_files):
             game = read_game(f)
             while game != None:
                 result = game.headers["Result"].split("-")
-                result = outcomes[
-                    result[0]
-                ]  # 1 if white wins 0 if black wins 0.5 if stalemate
+                result = outcomes[result[0]]  # 1 if white wins 0 if black wins 0.5 if stalemate
                 board = game.board()
                 for move in game.mainline_moves():
                     df.append(
@@ -42,7 +40,10 @@ def split_pgn(pgn_files):
 
 
 def shuffle_csv(sample_file_path, rounds=10, batch_size=10):
-    files = [f"data/split/chess{i}.csv" for i in range(1, len(os.listdir(os.path.dirname(sample_file_path)))+1)]
+    files = [
+        f"data/split/chess{i}.csv"
+        for i in range(1, len(os.listdir(os.path.dirname(sample_file_path))) + 1)
+    ]
     n_rows = 1000000
     leftover = pd.DataFrame([], columns=["board", "move", "outcome"])
     for i in range(rounds):
@@ -62,7 +63,7 @@ def shuffle_csv(sample_file_path, rounds=10, batch_size=10):
         )
 
 
-def prep_obs_df(df:pd.DataFrame) -> pd.DataFrame:
+def prep_obs_df(df: pd.DataFrame) -> pd.DataFrame:
     df["obs_board"] = df["board"].map(_parse_fen_board)
     df["obs_misc"] = df["board"].map(_parse_fen_misc)
     return df
@@ -76,6 +77,6 @@ def prep_obs_file(file_numbers):
         df.to_pickle(f"data/split/processed/chess{n}.pkl")
 
 
-def pgn_to_shuffled_csv(pgn_files:List[str]):
+def pgn_to_shuffled_csv(pgn_files: List[str]):
     split_pgn(pgn_files)
     shuffle_csv(pgn_files[0])

@@ -21,5 +21,3 @@ class RandomPolicy(BasePolicy):
                 raise Exception("Non-terminal state has no possible actions: " + str(state))
             state = state.takeAction(action)
         return state.getReward()
-
-

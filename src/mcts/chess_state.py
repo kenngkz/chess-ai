@@ -7,7 +7,7 @@ from .base.state import BaseState
 
 class ChessState(BaseState):
 
-    def __init__(self, fen:str):
+    def __init__(self, fen: str):
         self.fen = fen
         self.board = chess.Board(self.fen)
 
