@@ -20,5 +20,5 @@ class NNPlayer(Player):
 
     def select_move(self, fen_board: str) -> Move:
         obs = np.array([parse_fen(fen_board)])
-        predictions = self.model.predict(obs)
+        predictions = self.model.predict(obs, verbose=0)
         return pick_top_legal_move(fen_board, predictions[0])

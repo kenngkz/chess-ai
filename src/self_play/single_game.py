@@ -6,7 +6,7 @@ from src.schema.game import GameStep
 from src.schema.player import Player
 
 
-def generate_game(white: Player, black: Player) -> List[GameStep]:
+def play_game(white: Player, black: Player) -> List[GameStep]:
     board = chess.Board()
     game_history = []
     current_player = white
