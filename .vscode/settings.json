@@ -1,0 +1,26 @@
+{
+    "python.analysis.autoImportCompletions": true,
+    "python.analysis.extraPaths": [
+        "src"
+    ],
+    "editor.defaultFormatter": "ms-python.black-formatter",
+    "editor.formatOnSave": true,
+    "isort.args": [
+        "--settings-path",
+        "./.isort.cfg"
+    ],
+    "black-formatter.args": [
+        "--line-length",
+        "100"
+    ],
+    "[python]": {
+        "editor.tabSize": 4,
+        "editor.insertSpaces": true,
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "ms-python.black-formatter",
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": "explicit",
+            "source.fixAll": "explicit"
+        }
+    },
+}
