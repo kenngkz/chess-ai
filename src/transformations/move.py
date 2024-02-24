@@ -14,4 +14,4 @@ def move_to_index(move: Union[str, chess.Move]):
 
 
 def index_to_move(index: int) -> chess.Move:
-    return _index_to_move_mapping[index]
+    return chess.Move.from_uci(_index_to_move_mapping[index])
