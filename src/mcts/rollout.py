@@ -5,6 +5,7 @@ from .base.state import BaseState
 
 
 class RandomMaxDepthPolicy(BasePolicy):
+    "Take random action until terminal state or `max_depth` actions has been taken"
 
     def __init__(self, max_depth: int = 5):
         self.max_depth = max_depth

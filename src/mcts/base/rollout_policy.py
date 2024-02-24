@@ -12,6 +12,7 @@ class BasePolicy(ABC):
 
 
 class RandomPolicy(BasePolicy):
+    "Take random action until terminal state is reached"
 
     def rollout(self, state: BaseState) -> float:
         while not state.isTerminal():
