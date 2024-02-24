@@ -1,13 +1,9 @@
-from typing import List, TypedDict
+from typing import List
 
 import chess
 
+from src.schema.game import GameStep
 from src.schema.player import Player
-
-
-class GameStep(TypedDict):
-    board: str
-    outcome: float  # 1 for white win, 0 for black win, 0.5 for stalemate
 
 
 def generate_game(white: Player, black: Player) -> List[GameStep]:
