@@ -3,7 +3,7 @@ from typing import List
 import numpy as np
 import pandas as pd
 
-from ..preprocessing import prep_obs_df
+from src.preprocessing import prep_obs_df
 
 
 def train(model, files:List[str], ckpt_file:str=None):
