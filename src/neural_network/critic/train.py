@@ -17,7 +17,8 @@ def train(model, files:List[str], ckpt_file:str=None):
         else:
             raise Exception(f"Unhandled file: {file}")
         X = np.concatenate([np.array(df["obs_board"].values.tolist()), np.array(df["obs_misc"].values.tolist())], axis=1)
-        model.fit(X)
+        Y = df["outcome"].values
+        model.fit(X, Y)
         if ckpt_file:
             model.save(ckpt_file)
     return model
