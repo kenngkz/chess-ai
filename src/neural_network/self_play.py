@@ -3,7 +3,8 @@ import numpy as np
 from tensorflow.python.keras import Model
 
 from src.transformations.fen_to_obs import parse_fen
-from src.transformations.move import index_to_move
+
+from .common.legal_move import pick_top_legal_move
 
 
 class SelfPlay:
@@ -18,11 +19,11 @@ class SelfPlay:
 
         game_history = []
         for _ in range(1000):
+            fen = fen = board.fen()
             obs = np.array([parse_fen(board.fen())])
             predictions = self.actor.predict(obs)
-            selection_index = np.argmax(predictions[0])
-            move = index_to_move(selection_index)
-            game_history.append({"board": board.fen(), "outcome": None})
+            move = pick_top_legal_move(fen, predictions[0])
+            game_history.append({"board": fen, "outcome": None})
             board.push(move)
             outcome = board.outcome()
             if outcome:

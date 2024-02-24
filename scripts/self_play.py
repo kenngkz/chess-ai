@@ -23,7 +23,7 @@ self_play = SelfPlay(actor_model, critic_model)
 
 self_play.play_game()
 
-print(self_play.buffer)
-print(self_play.buffer[0]["outcome"])
 for step in self_play.buffer:
+    print("-----" * 4)
     print(chess.Board(step["board"]))
+print(self_play.buffer[0]["outcome"])
