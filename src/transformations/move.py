@@ -4,7 +4,7 @@ import chess
 
 from src.constants import UCI_MOVES
 
-index_to_move_mapping = [move for move, idx in list(UCI_MOVES.items())]
+_index_to_move_mapping = [move for move, idx in list(UCI_MOVES.items())]
 
 
 def move_to_index(move: Union[str, chess.Move]):
@@ -14,4 +14,4 @@ def move_to_index(move: Union[str, chess.Move]):
 
 
 def index_to_move(index: int) -> chess.Move:
-    return index_to_move_mapping[index]
+    return _index_to_move_mapping[index]
