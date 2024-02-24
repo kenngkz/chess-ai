@@ -13,8 +13,8 @@ from tensorflow.python.keras.models import load_model
 
 from src.neural_network.self_play import SelfPlay
 
-actor_file = "actor_model"
-critic_file = "critic_model"
+actor_file = "ckpt/actor_model"
+critic_file = "ckpt/critic_model"
 
 actor_model = tf.keras.models.load_model(actor_file)
 critic_model = tf.keras.models.load_model(critic_file)
