@@ -7,11 +7,11 @@ import tensorflow as tf
 from src.preprocessing import prep_obs_df
 
 
-def define_train_function(func_load_Y:Callable[[pd.DataFrame], np.ndarray], func_load_X:Callable[[pd.DataFrame], np.ndarray]=None) -> Callable[[tf.keras.Model, List[str], Optional[str]], tf.keras.Model]:
+def build_train_on_files_function(func_load_Y:Callable[[pd.DataFrame], np.ndarray], func_load_X:Callable[[pd.DataFrame], np.ndarray]=None) -> Callable[[tf.keras.Model, List[str], Optional[str]], tf.keras.Model]:
     if not func_load_X:
         func_load_X = _load_X_from_df
 
-    def train(model:tf.keras.Model, files:List[str], ckpt_file:str=None):
+    def train_on_files(model:tf.keras.Model, files:List[str], ckpt_file:str=None):
         for file in files:
             print(f"Training on {file}")
             df = _load_df_from_file(file)
@@ -22,7 +22,7 @@ def define_train_function(func_load_Y:Callable[[pd.DataFrame], np.ndarray], func
                 model.save(ckpt_file)
         return model
     
-    return train
+    return train_on_files
 
 
 def _load_df_from_file(file:str) -> pd.DataFrame:
