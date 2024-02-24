@@ -3,9 +3,9 @@ from chess import Move
 from tensorflow.python.keras import Model
 from tensorflow.python.keras.models import load_model
 
+from src.neural_network.common.legal_move import pick_top_legal_move
 from src.schema.player import Player
 from src.transformations.fen_to_obs import parse_fen
-from src.transformations.move import index_to_move
 
 
 class NNPlayer(Player):
@@ -21,5 +21,4 @@ class NNPlayer(Player):
     def select_move(self, fen_board: str) -> Move:
         obs = np.array([parse_fen(fen_board)])
         predictions = self.model.predict(obs)
-        selection_index = np.argmax(predictions[0])
-        return index_to_move(selection_index)
+        return pick_top_legal_move(fen_board, predictions[0])
