@@ -62,21 +62,20 @@ def shuffle_csv(sample_file_path, rounds=10, batch_size=10):
         )
 
 
-def process_df(df):
+def prep_obs_df(df:pd.DataFrame) -> pd.DataFrame:
     df["obs_board"] = df["board"].map(_parse_fen_board)
     df["obs_misc"] = df["board"].map(_parse_fen_misc)
     return df
 
 
-def process_file(file_numbers):
+def prep_obs_file(file_numbers):
     for n in file_numbers:
         print(f"proccessing file {n}")
         df = pd.read_csv(f"data/split/chess{n}.csv")
-        df = process_df(df)
+        df = prep_obs_df(df)
         df.to_pickle(f"data/split/processed/chess{n}.pkl")
 
 
-def process_raw_data(pgn_files:List[str], file_numbers=[1, 2, 3, 4, 5]):
+def pgn_to_shuffled_csv(pgn_files:List[str]):
     split_pgn(pgn_files)
     shuffle_csv(pgn_files[0])
-    process_file(file_numbers)
