@@ -1,17 +1,17 @@
-from typing import Callable, Dict, List, Tuple
+from typing import Callable, Dict, List
 
 import numpy as np
 import pandas as pd
-import tensorflow as tf
+from tensorflow.python.keras import Model, metrics
 
 from ._load_data import load_df_from_file_name, load_X_from_df
 
 
 def build_evaluate_on_files_function(
-    metrics: List[tf.keras.metrics.Metric], func_load_Y: Callable[[pd.DataFrame], np.ndarray]
-) -> Callable[[tf.keras.Model, List[str]], Dict[str, float]]:
+    metrics: List[metrics.Metric], func_load_Y: Callable[[pd.DataFrame], np.ndarray]
+) -> Callable[[Model, List[str]], Dict[str, float]]:
 
-    def evaluate_on_files(model: tf.keras.Model, files: List[str]) -> Tuple[float, float]:
+    def evaluate_on_files(model: Model, files: List[str]) -> Dict[str, float]:
         for metric in metrics:
             metric.reset_state()
 
