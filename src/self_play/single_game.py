@@ -18,7 +18,10 @@ def play_game(white: Player, black: Player) -> List[GameStep]:
         outcome = board.outcome()
         if outcome:
             for step in game_history:
-                step["outcome"] = int(outcome.winner == chess.WHITE)
+                if outcome.winner:
+                    step["outcome"] = int(outcome.winner == chess.WHITE)
+                else:
+                    step["outcome"] = 0.5
             break
         current_player = black if current_player == white else white
     else:
