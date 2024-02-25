@@ -35,7 +35,7 @@ class SimpleSelfPlay:
         return self.actor
 
 
-# two ideas for how to fit the actor
+# idea for how to fit the actor
 # 1. one-step lookahead
 #   - for a board state in training, we compute the critic prediction for the states after every legal action
 #   - use critic prediction
