@@ -1,6 +1,8 @@
 import os
 import sys
 
+import chess
+
 # this is the directory name of this __init__ file
 SCRIPTS_DIRNAME = "scripts"
 if os.path.basename(os.getcwd()) == SCRIPTS_DIRNAME:
@@ -19,4 +21,8 @@ actor_model = tf.keras.models.load_model(actor_file)
 critic_model = tf.keras.models.load_model(critic_file)
 
 player = NNPlayer(actor_model)
-print(play_game(player, player))
+game_history = play_game(player, player)
+for step in game_history[-5:]:
+    print("-" * 20)
+    print(chess.Board(step["board"]))
+print(step["outcome"])
